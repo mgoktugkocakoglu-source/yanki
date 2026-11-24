@@ -152,7 +152,11 @@ export function CommandCenter({ initial }: { initial: LiveSnapshot }) {
         <div className="flex min-w-0 flex-col gap-5">
           <section className="grid gap-6 rounded-lg border border-line bg-surface p-6 sm:grid-cols-3" aria-label="Son 24 saat">
             <Stat label="Son 24 saatte bahsetme" value={formatNumber(summary.total)} note={change ? `önceki 24 saate göre ${change}` : undefined} />
-            <Stat label="Olumsuz oranı" value={summary.total > 0 ? formatPercent(share(summary.negative, summary.total)) : "—"} note={`${formatNumber(summary.negative)} olumsuz içerik`} />
+            <Stat
+              label="Olumsuz oranı"
+              value={summary.total > 0 ? formatPercent(share(summary.negative, summary.total)) : "—"}
+              note={`${formatNumber(summary.negative)} olumsuz içerik`}
+            />
             <Stat label="Net ton" value={net === null ? "—" : formatSigned(net)} note="(olumlu − olumsuz) ÷ (olumlu + olumsuz) × 100" />
           </section>
 

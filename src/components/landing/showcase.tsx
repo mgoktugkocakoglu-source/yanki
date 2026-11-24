@@ -39,8 +39,7 @@ export const loadShowcase = cache(async () => {
   const owners = await listProjectOwners();
   const range = resolveRange(DEFAULT_RANGE, now);
   const projects = (await listProjects(workspace.id)).filter((entry) => !owners.has(entry.id));
-  const ranked = (await Promise.all(projects
-      .map(async (entry) => ({ entry, total: (await summarize({ projectId: entry.id, range })).total }))))
+  const ranked = (await Promise.all(projects.map(async (entry) => ({ entry, total: (await summarize({ projectId: entry.id, range })).total }))))
     .filter((candidate) => candidate.total > 0)
     .sort((a, b) => b.total - a.total);
   const project = ranked[0]?.entry;
@@ -144,12 +143,22 @@ export async function SolutionPreview({ kind }: { demo: SolutionDemo; kind: Solu
         );
       case "compare": {
         const range = resolveRange(DEFAULT_RANGE, now);
-        const rows = (await Promise.all(projects
-                  .map(async (entry) => {
-                    const summary = await summarize({ projectId: entry.id, range });
-                    return { key: entry.id, label: entry.name, total: summary.total, positive: summary.positive, negative: summary.negative, neutral: summary.neutral, href: projectHref(entry.id) };
-                  })))
-          .sort((a, b) => b.total - a.total);
+        const rows = (
+          await Promise.all(
+            projects.map(async (entry) => {
+              const summary = await summarize({ projectId: entry.id, range });
+              return {
+                key: entry.id,
+                label: entry.name,
+                total: summary.total,
+                positive: summary.positive,
+                negative: summary.negative,
+                neutral: summary.neutral,
+                href: projectHref(entry.id),
+              };
+            }),
+          )
+        ).sort((a, b) => b.total - a.total);
         return (
           <PreviewCard title="Projelere göre hacim ve ton" aside={<ToneLegend />}>
             <RankedBars rows={rows} splitByTone caption="Projelere göre bahsedilme sayısı ve ton" labelHeader="Proje" />
@@ -232,17 +241,17 @@ export async function SolutionPreview({ kind }: { demo: SolutionDemo; kind: Solu
         return (
           <PreviewCard title="Çalışma alanları">
             <ul className="flex flex-col divide-y divide-line">
-              {(await Promise.all(workspaces.map(async (workspace) => {
-                                    const names = (await listProjects(workspace.id)).map((entry) => entry.name);
-                                    return (
-                                      <li key={workspace.id} className="py-2.5 first:pt-0 last:pb-0">
-                                        <p className="font-medium">{workspace.name}</p>
-                                        <p className="text-[0.8125rem] text-ink-muted">
-                                          {names.length > 0 ? `${formatNumber(names.length)} proje: ${names.join(", ")}` : "henüz proje yok"}
-                                        </p>
-                                      </li>
-                                    );
-                                  })))}
+              {await Promise.all(
+                workspaces.map(async (workspace) => {
+                  const names = (await listProjects(workspace.id)).map((entry) => entry.name);
+                  return (
+                    <li key={workspace.id} className="py-2.5 first:pt-0 last:pb-0">
+                      <p className="font-medium">{workspace.name}</p>
+                      <p className="text-[0.8125rem] text-ink-muted">{names.length > 0 ? `${formatNumber(names.length)} proje: ${names.join(", ")}` : "henüz proje yok"}</p>
+                    </li>
+                  );
+                }),
+              )}
             </ul>
             <p className="mt-3 text-[0.8125rem] text-ink-muted">
               Yeni proje yalnızca canlı çalışma alanında açılır:{" "}

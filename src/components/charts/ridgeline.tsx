@@ -62,7 +62,10 @@ export function Ridgeline({ ridges, bucket }: RidgelineProps) {
         {/* Sırtlar */}
         <div className="relative" style={{ height: plotHeight + ROW_HEIGHT * (visible.length - 1) }}>
           {visible.map((ridge, index) => {
-            const paths = ridgePaths(ridge.points.map((point) => point.total), max);
+            const paths = ridgePaths(
+              ridge.points.map((point) => point.total),
+              max,
+            );
             return (
               <svg
                 key={ridge.key}

@@ -68,11 +68,7 @@ const RULES: readonly IntentRule[] = [
   {
     intent: "praise",
     requires: ["positive"],
-    patterns: [
-      /\b(tesekkur|tebrik|bravo|helal|takdir)/,
-      /\b(memnun|harika|mukemmel|super|bayildim)/,
-      /\btavsiye ederim\b/,
-    ],
+    patterns: [/\b(tesekkur|tebrik|bravo|helal|takdir)/, /\b(memnun|harika|mukemmel|super|bayildim)/, /\btavsiye ederim\b/],
   },
 ];
 

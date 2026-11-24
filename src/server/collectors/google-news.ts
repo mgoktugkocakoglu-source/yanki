@@ -96,8 +96,7 @@ export const googleNewsConnector: Connector = {
     sourceType: "news",
     summary: "Anahtar kelimeyle haber araması; binlerce yayından başlık getirir.",
     access: "personal-only",
-    terms:
-      "Akışın kendi koşulu: yalnızca kişisel, ticari olmayan kullanım. Kurumsal kurulumda kapatılır; yerine lisanslı bir haber sağlayıcısı bağlanmalıdır.",
+    terms: "Akışın kendi koşulu: yalnızca kişisel, ticari olmayan kullanım. Kurumsal kurulumda kapatılır; yerine lisanslı bir haber sağlayıcısı bağlanmalıdır.",
     capabilities: {
       keywordSearch: true,
       history: "Son 30 güne kadar, arama başına en çok 100 başlık",

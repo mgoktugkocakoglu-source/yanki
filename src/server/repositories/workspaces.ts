@@ -32,11 +32,6 @@ export async function getWorkspaceByKind(kind: WorkspaceKind): Promise<Workspace
 
 export async function createWorkspace(name: string, kind: WorkspaceKind, now: number): Promise<Workspace> {
   const workspace: Workspace = { id: randomUUID(), name, kind, createdAt: now };
-  await execute("INSERT INTO workspaces (id, name, kind, created_at) VALUES (?, ?, ?, ?)", [
-        workspace.id,
-        workspace.name,
-        workspace.kind,
-        workspace.createdAt,
-      ]);
+  await execute("INSERT INTO workspaces (id, name, kind, created_at) VALUES (?, ?, ?, ?)", [workspace.id, workspace.name, workspace.kind, workspace.createdAt]);
   return workspace;
 }

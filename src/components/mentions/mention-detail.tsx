@@ -55,7 +55,11 @@ export function MentionDetail({ mention, queries, topicNames, closeHref }: Menti
             {author && author !== mention.sourceName ? ` · ${author}` : ""}
           </p>
         </div>
-        <Link href={closeHref} scroll={false} className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-[0.8125rem] font-medium text-ink-soft hover:bg-sunken hover:text-ink">
+        <Link
+          href={closeHref}
+          scroll={false}
+          className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-[0.8125rem] font-medium text-ink-soft hover:bg-sunken hover:text-ink"
+        >
           <X className="h-4 w-4" aria-hidden="true" />
           Kapat
         </Link>
@@ -77,7 +81,9 @@ export function MentionDetail({ mention, queries, topicNames, closeHref }: Menti
           <Highlighted text={mention.content} queries={queries} />
         </p>
       ) : null}
-      {mention.sourceType === "news" ? <p className="mt-2 text-[0.75rem] text-ink-muted">Haberlerde tam metin saklanmaz; eşleşmenin çevresinden kısa bir alıntı gösterilir.</p> : null}
+      {mention.sourceType === "news" ? (
+        <p className="mt-2 text-[0.75rem] text-ink-muted">Haberlerde tam metin saklanmaz; eşleşmenin çevresinden kısa bir alıntı gösterilir.</p>
+      ) : null}
 
       <dl className="mt-4 divide-y divide-line border-y border-line">
         <Row label="Yayın zamanı">

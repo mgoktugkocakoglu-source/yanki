@@ -34,7 +34,8 @@ export const METRICS = {
   netTone: {
     name: "Net ton",
     formula: "(Olumlu − Olumsuz) ÷ (Olumlu + Olumsuz) × 100",
-    notes: "Nötr içerik formüle girmez. −100 ile +100 arasındadır. Ton, sözlük ve kural tabanlı bir çözümleyiciyle belirlenir; düzelttiğiniz içeriklerde sizin kararınız geçerlidir.",
+    notes:
+      "Nötr içerik formüle girmez. −100 ile +100 arasındadır. Ton, sözlük ve kural tabanlı bir çözümleyiciyle belirlenir; düzelttiğiniz içeriklerde sizin kararınız geçerlidir.",
   },
   negativeShare: {
     name: "Olumsuz oranı",
@@ -59,7 +60,8 @@ export const METRICS = {
   anomaly: {
     name: "Olağan dışı hareket",
     formula: "Sağlam z-skoru = (gözlenen − medyan) ÷ en büyük(1,4826 × MAD, √medyan). Eşik: 3,5.",
-    notes: "Medyan ve MAD, önceki 28 günden (saatlik görünümde önceki 7 günün aynı saatinden) hesaplanır. En az 8 bahsetme ve olağan düzeyin 1,5 katı şartı aranır. Sezgisel bir uyarıdır; kesin bir kriz tespiti değildir.",
+    notes:
+      "Medyan ve MAD, önceki 28 günden (saatlik görünümde önceki 7 günün aynı saatinden) hesaplanır. En az 8 bahsetme ve olağan düzeyin 1,5 katı şartı aranır. Sezgisel bir uyarıdır; kesin bir kriz tespiti değildir.",
   },
 } as const satisfies Record<string, MetricDefinition>;
 

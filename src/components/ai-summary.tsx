@@ -72,10 +72,7 @@ export async function AiSummaryPanel({ projectId, rangeKey, now }: { projectId: 
           <p className="mt-4 border-t border-line pt-3 text-[0.8125rem] text-ink-muted">
             {RANGE_PRESETS[latest.rangeKey].label} · {formatRelative(latest.createdAt, now)} üretildi · model: <span className="reading">{latest.model}</span> · dönemdeki{" "}
             {formatNumber(latest.mentionsTotal)} içeriğin en yeni {formatNumber(latest.mentionsSent)} tanesi gönderildi (her birinin ilk {ITEM_TEXT_LIMIT} karakteri)
-            {latest.inputTokens !== null && latest.outputTokens !== null
-              ? ` · ${formatNumber(latest.inputTokens)} girdi, ${formatNumber(latest.outputTokens)} çıktı tokenı`
-              : ""}
-            .
+            {latest.inputTokens !== null && latest.outputTokens !== null ? ` · ${formatNumber(latest.inputTokens)} girdi, ${formatNumber(latest.outputTokens)} çıktı tokenı` : ""}.
           </p>
         </>
       ) : (

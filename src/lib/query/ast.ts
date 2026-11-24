@@ -1,18 +1,6 @@
 import type { TermMode } from "../text/turkish";
 
-export type FieldName =
-  | "source"
-  | "site"
-  | "sentiment"
-  | "emotion"
-  | "intent"
-  | "lang"
-  | "author"
-  | "topic"
-  | "sarcasm"
-  | "reach"
-  | "engagement"
-  | "followers";
+export type FieldName = "source" | "site" | "sentiment" | "emotion" | "intent" | "lang" | "author" | "topic" | "sarcasm" | "reach" | "engagement" | "followers";
 
 export type CompareOp = "=" | ">" | ">=" | "<" | "<=";
 

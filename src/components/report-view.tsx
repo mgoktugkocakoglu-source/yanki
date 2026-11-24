@@ -141,8 +141,8 @@ export async function ReportView({ project, rangeKey, now }: { project: Project;
             {overview.anomalies.slice(0, 8).map((anomaly) => (
               <li key={anomaly.bucketStart}>
                 <span className="reading font-medium">{formatDateTime(anomaly.bucketStart)}</span> · {LEVEL_LABEL[anomaly.level]} ·{" "}
-                <span className="reading">{formatNumber(anomaly.observed)}</span> içerik (olağan düzey <span className="reading">{formatNumber(Math.round(anomaly.baseline))}</span>),
-                olumsuz oranı <span className="reading">{formatPercent(anomaly.negativeShare)}</span>
+                <span className="reading">{formatNumber(anomaly.observed)}</span> içerik (olağan düzey <span className="reading">{formatNumber(Math.round(anomaly.baseline))}</span>
+                ), olumsuz oranı <span className="reading">{formatPercent(anomaly.negativeShare)}</span>
               </li>
             ))}
           </ul>

@@ -33,7 +33,10 @@ export default async function OrganizationAdminPage() {
 
   return (
     <PageContainer>
-      <PageHeading title="Kurum yönetimi" lead={`${organization.name}: kurumunuzdaki hesaplar, davetler ve krediler. Bu ekranda yapabildikleriniz, sistem yöneticisinin size verdiği yetkilerle sınırlıdır.`} />
+      <PageHeading
+        title="Kurum yönetimi"
+        lead={`${organization.name}: kurumunuzdaki hesaplar, davetler ve krediler. Bu ekranda yapabildikleriniz, sistem yöneticisinin size verdiği yetkilerle sınırlıdır.`}
+      />
 
       <div className="flex flex-col gap-5">
         <StatTiles

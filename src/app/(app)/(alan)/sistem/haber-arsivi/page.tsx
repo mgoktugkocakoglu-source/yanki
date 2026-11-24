@@ -109,7 +109,9 @@ export default async function NewsArchivePage() {
                       <tr key={feed.id} className="border-t border-line align-top">
                         <th scope="row" className="py-2 pr-4 font-medium">
                           {feed.outlet}
-                          {feed.origin === "manual" ? <span className="ml-1.5 rounded bg-sunken px-1.5 py-0.5 text-[0.6875rem] font-medium text-ink-soft">elle eklendi</span> : null}
+                          {feed.origin === "manual" ? (
+                            <span className="ml-1.5 rounded bg-sunken px-1.5 py-0.5 text-[0.6875rem] font-medium text-ink-soft">elle eklendi</span>
+                          ) : null}
                         </th>
                         <td className="reading max-w-[22rem] break-all py-2 pr-4 text-[0.8125rem] text-ink-soft">{feed.url}</td>
                         <td className={`py-2 pr-4 ${status.tone}`}>

@@ -130,7 +130,8 @@ export default async function SourcesPage({ params, searchParams }: PageProps<"/
 
       {isNew || wasSaved ? (
         <p className="mb-5 rounded-md border border-positive/40 bg-positive-wash px-4 py-3 text-positive-ink" role="status">
-          {isNew ? "Proje oluşturuldu." : "Değişiklikler kaydedildi."} İlk tarama arka planda başladı; birkaç saniye sonra sayfayı yenileyin ya da “Şimdi tara” ile sonucu hemen görün.
+          {isNew ? "Proje oluşturuldu." : "Değişiklikler kaydedildi."} İlk tarama arka planda başladı; birkaç saniye sonra sayfayı yenileyin ya da “Şimdi tara” ile sonucu hemen
+          görün.
         </p>
       ) : null}
 

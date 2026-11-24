@@ -36,11 +36,5 @@ function toSegments(text: string, queries: readonly QueryNode[]): Segment[] {
 
 export function Highlighted({ text, queries }: { text: string; queries: readonly QueryNode[] }) {
   if (queries.length === 0) return <>{text}</>;
-  return (
-    <>
-      {toSegments(text, queries).map((segment, index) =>
-        segment.marked ? <mark key={index}>{segment.text}</mark> : <span key={index}>{segment.text}</span>,
-      )}
-    </>
-  );
+  return <>{toSegments(text, queries).map((segment, index) => (segment.marked ? <mark key={index}>{segment.text}</mark> : <span key={index}>{segment.text}</span>))}</>;
 }

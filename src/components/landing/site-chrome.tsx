@@ -47,7 +47,10 @@ function SolutionsMenu() {
             </ul>
           </div>
         ))}
-        <Link href="/cozumler" className="col-span-2 mt-2 inline-flex items-center gap-1 border-t border-line px-2.5 pt-3 text-[0.875rem] font-semibold text-brand-strong hover:underline">
+        <Link
+          href="/cozumler"
+          className="col-span-2 mt-2 inline-flex items-center gap-1 border-t border-line px-2.5 pt-3 text-[0.875rem] font-semibold text-brand-strong hover:underline"
+        >
           Tüm çözümler
           <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
@@ -114,18 +117,17 @@ export function SiteFooter() {
           <p className="mt-3 max-w-[30ch] text-[0.875rem] text-ink-soft">Gündem tarama, medya izleme ve sosyal dinleme platformu.</p>
         </div>
         {SOLUTION_GROUPS.map((group) => (
-          <FooterColumn key={group} title={SOLUTION_GROUP_LABELS[group]} links={solutionsIn(group).map((solution) => ({ href: solutionHref(solution.slug), label: solution.name }))} />
+          <FooterColumn
+            key={group}
+            title={SOLUTION_GROUP_LABELS[group]}
+            links={solutionsIn(group).map((solution) => ({ href: solutionHref(solution.slug), label: solution.name }))}
+          />
         ))}
-        <FooterColumn
-          title="Ürün"
-          links={[
-            ...PAGE_LINKS,
-            { href: "/panel", label: "Demo paneli" },
-            { href: "/projeler/yeni", label: "Yeni proje" },
-          ]}
-        />
+        <FooterColumn title="Ürün" links={[...PAGE_LINKS, { href: "/panel", label: "Demo paneli" }, { href: "/projeler/yeni", label: "Yeni proje" }]} />
       </div>
-      <p className={`${SECTION} border-t border-line py-5 text-[0.8125rem] text-ink-muted`}>Panelde gösterilen içerikler bağlı kaynaklardan toplanmış gerçek haber ve paylaşımlardır.</p>
+      <p className={`${SECTION} border-t border-line py-5 text-[0.8125rem] text-ink-muted`}>
+        Panelde gösterilen içerikler bağlı kaynaklardan toplanmış gerçek haber ve paylaşımlardır.
+      </p>
     </footer>
   );
 }

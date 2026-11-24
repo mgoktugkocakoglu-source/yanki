@@ -125,7 +125,10 @@ export function buildCollectionPlan(ast: QueryNode): CollectionPlan | null {
   const groups = groupsOf(ast)
     .map(unique)
     .filter((group) => {
-      const key = group.map((term) => term.toLocaleLowerCase("tr-TR")).sort().join("|");
+      const key = group
+        .map((term) => term.toLocaleLowerCase("tr-TR"))
+        .sort()
+        .join("|");
       if (seenGroups.has(key)) return false;
       seenGroups.add(key);
       return true;

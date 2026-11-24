@@ -117,7 +117,11 @@ export function MemberList({ members, viewer, now }: MemberListProps) {
                 {canAssignCredits(viewer, member) ? <CreditForm userId={member.id} name={member.name} /> : null}
                 {manageable && member.disabledAt === null ? <RowAction kind="reset" fields={{ userId: member.id }} label="Parola sıfırla" /> : null}
                 {manageable ? (
-                  <RowAction kind="disable" fields={{ userId: member.id, disabled: member.disabledAt === null ? "1" : "0" }} label={member.disabledAt === null ? "Hesabı kapat" : "Yeniden aç"} />
+                  <RowAction
+                    kind="disable"
+                    fields={{ userId: member.id, disabled: member.disabledAt === null ? "1" : "0" }}
+                    label={member.disabledAt === null ? "Hesabı kapat" : "Yeniden aç"}
+                  />
                 ) : null}
                 {system && member.role !== "sysadmin" ? (
                   <form action={setUserRoleAction}>
@@ -133,7 +137,10 @@ export function MemberList({ members, viewer, now }: MemberListProps) {
             {system && member.role === "admin" ? (
               <details className="mt-3 rounded-lg bg-sunken/60 p-3" open={member.permissions.length === 0}>
                 <summary className="cursor-pointer text-[0.875rem] font-medium">
-                  Yetkiler <span className="font-normal text-ink-muted">· {member.permissions.length} / {PERMISSIONS.length} verildi</span>
+                  Yetkiler{" "}
+                  <span className="font-normal text-ink-muted">
+                    · {member.permissions.length} / {PERMISSIONS.length} verildi
+                  </span>
                 </summary>
                 <div className="mt-3">
                   <PermissionsForm userId={member.id} granted={member.permissions} />

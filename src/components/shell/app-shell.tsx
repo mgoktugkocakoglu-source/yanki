@@ -1,4 +1,22 @@
-import { BarChart3, Bell, Building2, FileText, FolderKanban, GitCompareArrows, LayoutDashboard, LogOut, MessageSquareText, MonitorPlay, Newspaper, Radio, ScrollText, Search, Settings, ShieldAlert, ShieldCheck } from "lucide-react";
+import {
+  BarChart3,
+  Bell,
+  Building2,
+  FileText,
+  FolderKanban,
+  GitCompareArrows,
+  LayoutDashboard,
+  LogOut,
+  MessageSquareText,
+  MonitorPlay,
+  Newspaper,
+  Radio,
+  ScrollText,
+  Search,
+  Settings,
+  ShieldAlert,
+  ShieldCheck,
+} from "lucide-react";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { ROLE_LABELS, type Permission, type UserRole } from "@/domain/permissions";
@@ -132,7 +150,10 @@ export function AppShell({ workspace, workspaces, projects, project, viewer, chi
               </span>
             </Link>
             <form action={logoutAction} className="mt-1">
-              <button type="submit" className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[0.875rem] font-medium text-ink-soft hover:bg-sunken hover:text-ink">
+              <button
+                type="submit"
+                className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[0.875rem] font-medium text-ink-soft hover:bg-sunken hover:text-ink"
+              >
                 <LogOut className={`${ICON} text-ink-muted`} aria-hidden="true" />
                 Çıkış yap
               </button>

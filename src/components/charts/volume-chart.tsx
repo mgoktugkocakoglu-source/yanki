@@ -80,10 +80,7 @@ export function VolumeChart({ points, bucket, markers = [], mentionsHref, height
                     <AnomalyRing level={marker.level} />
                   </span>
                 ) : null}
-                <span
-                  className="flex w-full max-w-6 flex-col gap-0.5 overflow-hidden rounded-t"
-                  style={{ height: `${heightPercent}%`, minHeight: point.total > 0 ? 3 : 0 }}
-                >
+                <span className="flex w-full max-w-6 flex-col gap-0.5 overflow-hidden rounded-t" style={{ height: `${heightPercent}%`, minHeight: point.total > 0 ? 3 : 0 }}>
                   {point.positive > 0 ? <span className="bg-positive" style={{ flex: point.positive }} /> : null}
                   {point.neutral > 0 ? <span className="bg-neutral" style={{ flex: point.neutral }} /> : null}
                   {point.negative > 0 ? <span className="bg-negative" style={{ flex: point.negative }} /> : null}

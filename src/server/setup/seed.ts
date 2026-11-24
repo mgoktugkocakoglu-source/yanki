@@ -40,9 +40,7 @@ async function writeSeededDay(day: number): Promise<void> {
 async function fillProject(project: Project, spec: DemoProjectSpec, now: number): Promise<number> {
   const prepared = prepareProject(project, await listTopics(project.id));
   const rawItems = generateRawItems(spec, now);
-  const mentions = rawItems
-    .map((raw) => buildMention(raw, prepared, { now, isDemo: true }))
-    .filter((mention): mention is NewMention => mention !== null);
+  const mentions = rawItems.map((raw) => buildMention(raw, prepared, { now, isDemo: true })).filter((mention): mention is NewMention => mention !== null);
 
   if (mentions.length < rawItems.length) {
     // Bir şablon proje sorgusuyla eşleşmiyorsa metin ya da sorgu hatalıdır.
@@ -103,11 +101,14 @@ export async function ensureSeeded(now: number = Date.now()): Promise<void> {
       for (const [index, spec] of DEMO_WORKSPACES.entries()) inserted += await createDemoWorkspace(spec, now + index);
     }
     await createWorkspace(LIVE_WORKSPACE_NAME, "live", now);
-    await recordAudit({ workspaceId: null, action: "kurulum", objectType: "sistem", detail: config.seedFixture ? `İlk kurulum: ${inserted} sınama kaydı oluşturuldu.` : "İlk kurulum." }, now);
+    await recordAudit(
+      { workspaceId: null, action: "kurulum", objectType: "sistem", detail: config.seedFixture ? `İlk kurulum: ${inserted} sınama kaydı oluşturuldu.` : "İlk kurulum." },
+      now,
+    );
     await writeSeededDay(day);
   } else {
     await removeRetiredDemoWorkspaces();
-    if (config.seedFixture && await readSeededDay() !== day) {
+    if (config.seedFixture && (await readSeededDay()) !== day) {
       await refreshDemoWorkspaces(now);
       await writeSeededDay(day);
     }

@@ -14,7 +14,7 @@ export const LOGIN_PATH = "/giris";
 
 /** En az bir kullanıcı tanımlandıysa panel oturum ister. */
 export async function authEnabled(): Promise<boolean> {
-  return await countUsers() > 0;
+  return (await countUsers()) > 0;
 }
 
 /**
@@ -31,7 +31,7 @@ export async function currentUser(): Promise<User | null> {
  * ekranına yönlendirir. Giriş zorunlu değilse null döner.
  */
 export async function requireUser(): Promise<Viewer> {
-  if (!await authEnabled()) return null;
+  if (!(await authEnabled())) return null;
   const user = await currentUser();
   if (!user) redirect(LOGIN_PATH);
   return user;

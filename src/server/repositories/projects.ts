@@ -48,10 +48,7 @@ function toTopic(row: TopicRow): ProjectTopic {
 }
 
 export async function listProjects(workspaceId: string): Promise<Project[]> {
-  return (await queryAll<ProjectRow>(
-      `SELECT ${PROJECT_COLUMNS} FROM projects WHERE workspace_id = ? ORDER BY created_at`,
-      [workspaceId],
-    )).map(toProject);
+  return (await queryAll<ProjectRow>(`SELECT ${PROJECT_COLUMNS} FROM projects WHERE workspace_id = ? ORDER BY created_at`, [workspaceId])).map(toProject);
 }
 
 export async function listAllProjects(): Promise<Project[]> {
@@ -85,28 +82,29 @@ export async function createProject(workspaceId: string, input: ProjectInput, no
     createdAt: now,
     updatedAt: now,
   };
-  await execute(
-        `INSERT INTO projects (${PROJECT_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          project.id,
-          project.workspaceId,
-          project.name,
-          project.description,
-          project.query,
-          JSON.stringify(project.connectorIds),
-          project.colorSlot,
-          project.createdAt,
-          project.updatedAt,
-        ],
-      );
+  await execute(`INSERT INTO projects (${PROJECT_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+    project.id,
+    project.workspaceId,
+    project.name,
+    project.description,
+    project.query,
+    JSON.stringify(project.connectorIds),
+    project.colorSlot,
+    project.createdAt,
+    project.updatedAt,
+  ]);
   return project;
 }
 
 export async function updateProject(id: string, input: ProjectInput, now: number): Promise<void> {
-  await execute(
-        "UPDATE projects SET name = ?, description = ?, query = ?, connector_ids = ?, updated_at = ? WHERE id = ?",
-        [input.name, input.description, input.query, JSON.stringify(input.connectorIds), now, id],
-      );
+  await execute("UPDATE projects SET name = ?, description = ?, query = ?, connector_ids = ?, updated_at = ? WHERE id = ?", [
+    input.name,
+    input.description,
+    input.query,
+    JSON.stringify(input.connectorIds),
+    now,
+    id,
+  ]);
 }
 
 export async function deleteProject(id: string): Promise<void> {
@@ -114,10 +112,7 @@ export async function deleteProject(id: string): Promise<void> {
 }
 
 export async function listTopics(projectId: string): Promise<ProjectTopic[]> {
-  return (await queryAll<TopicRow>(
-      `SELECT ${TOPIC_COLUMNS} FROM project_topics WHERE project_id = ? ORDER BY position`,
-      [projectId],
-    )).map(toTopic);
+  return (await queryAll<TopicRow>(`SELECT ${TOPIC_COLUMNS} FROM project_topics WHERE project_id = ? ORDER BY position`, [projectId])).map(toTopic);
 }
 
 export interface TopicInput {
@@ -129,14 +124,21 @@ export interface TopicInput {
 /** Projenin konu listesini verilenle değiştirir. Eski eşleşmeler silinir. */
 export async function replaceTopics(projectId: string, topics: TopicInput[]): Promise<ProjectTopic[]> {
   return await transaction(async () => {
-      await execute("DELETE FROM project_topics WHERE project_id = ?", [projectId]);
-      return (await Promise.all(topics.map(async (topic, position) => {
-            const created: ProjectTopic = { id: randomUUID(), projectId, ...topic };
-            await execute(
-                      "INSERT INTO project_topics (id, project_id, group_name, name, name_folded, query, position) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                      [created.id, projectId, created.groupName, created.name, foldPhrase(created.name), created.query, position],
-                    );
-            return created;
-          })));
-    });
+    await execute("DELETE FROM project_topics WHERE project_id = ?", [projectId]);
+    return await Promise.all(
+      topics.map(async (topic, position) => {
+        const created: ProjectTopic = { id: randomUUID(), projectId, ...topic };
+        await execute("INSERT INTO project_topics (id, project_id, group_name, name, name_folded, query, position) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+          created.id,
+          projectId,
+          created.groupName,
+          created.name,
+          foldPhrase(created.name),
+          created.query,
+          position,
+        ]);
+        return created;
+      }),
+    );
+  });
 }

@@ -32,7 +32,28 @@ const NEWS_OUTLETS = [
   { domain: "teknoakis.example", name: "Tekno Akış" },
 ] as const;
 
-const FIRST_NAMES = ["Ayça", "Kerem", "Elif", "Mert", "Zeynep", "Onur", "Selin", "Burak", "Deniz", "Ece", "Emre", "Gizem", "Tolga", "İrem", "Cem", "Derya", "Barış", "Sibel", "Umut", "Nil"];
+const FIRST_NAMES = [
+  "Ayça",
+  "Kerem",
+  "Elif",
+  "Mert",
+  "Zeynep",
+  "Onur",
+  "Selin",
+  "Burak",
+  "Deniz",
+  "Ece",
+  "Emre",
+  "Gizem",
+  "Tolga",
+  "İrem",
+  "Cem",
+  "Derya",
+  "Barış",
+  "Sibel",
+  "Umut",
+  "Nil",
+];
 const INITIALS = "ABCDEFGHKLMNOPRSTUYZ";
 
 /** Yerel saate göre günün saatlerinin göreli yoğunluğu. */

@@ -20,8 +20,7 @@ export const ASK_MENTION_LIMIT = 100;
 export const QUESTION_MAX_LENGTH = 300;
 
 export type AskOutcome =
-  | { ok: true; answer: string; evidenceIds: string[]; model: string; mentionsSent: number }
-  | { ok: false; reason: "disabled" | "empty" | "invalid" | "failed"; message: string };
+  { ok: true; answer: string; evidenceIds: string[]; model: string; mentionsSent: number } | { ok: false; reason: "disabled" | "empty" | "invalid" | "failed"; message: string };
 
 /** Modele verilen ölçüm dökümü. Sayıların tek kaynağı budur; model başka sayı kullanmamalıdır. */
 export function buildFacts(overview: Overview): string {
@@ -45,7 +44,10 @@ export function buildFacts(overview: Overview): string {
     overview.anomalies.length > 0 ? "Olağan dışı hareketler:" : "Olağan dışı hareket: yok",
     ...overview.anomalies
       .slice(0, 8)
-      .map((anomaly) => `- ${formatDateTime(anomaly.bucketStart)}: ${anomaly.observed} içerik (olağan düzey ${Math.round(anomaly.baseline)}), olumsuz oranı ${formatPercent(anomaly.negativeShare)}`),
+      .map(
+        (anomaly) =>
+          `- ${formatDateTime(anomaly.bucketStart)}: ${anomaly.observed} içerik (olağan düzey ${Math.round(anomaly.baseline)}), olumsuz oranı ${formatPercent(anomaly.negativeShare)}`,
+      ),
   );
   return lines.join("\n");
 }

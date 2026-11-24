@@ -207,12 +207,9 @@ function collectEnglishHits(tokens: readonly string[]): PolarHit[] {
 
 export function analyzeSentiment(tokens: readonly string[], originalText: string, language: string): SentimentResult {
   const isEnglish = language === "en";
-  const { hits, hasServiceFailure } = isEnglish
-    ? { hits: collectEnglishHits(tokens), hasServiceFailure: false }
-    : collectTurkishHits(tokens);
+  const { hits, hasServiceFailure } = isEnglish ? { hits: collectEnglishHits(tokens), hasServiceFailure: false } : collectTurkishHits(tokens);
 
-  const emojiScore =
-    (countMatches(originalText, POSITIVE_EMOJI) - countMatches(originalText, NEGATIVE_EMOJI)) * EMOJI_WEIGHT;
+  const emojiScore = (countMatches(originalText, POSITIVE_EMOJI) - countMatches(originalText, NEGATIVE_EMOJI)) * EMOJI_WEIGHT;
   let raw = hits.reduce((sum, hit) => sum + hit.weight, 0) + emojiScore;
 
   // İroni şüphesi: övgü + hizmet aksaklığı ("harikasınız, yine giremiyorum") ya da açık işaret "(!)".
@@ -228,8 +225,7 @@ export function analyzeSentiment(tokens: readonly string[], originalText: string
   }
 
   const score = Math.tanh(raw / SCORE_SCALE);
-  const sentiment: Sentiment =
-    score > POSITIVE_THRESHOLD ? "positive" : score < NEGATIVE_THRESHOLD ? "negative" : "neutral";
+  const sentiment: Sentiment = score > POSITIVE_THRESHOLD ? "positive" : score < NEGATIVE_THRESHOLD ? "negative" : "neutral";
 
   const evidenceCount = hits.length + (emojiScore !== 0 ? 1 : 0);
   const confidence = evidenceCount === 0 ? 0.35 : Math.min(0.95, 0.4 + Math.abs(raw) * 0.12 + evidenceCount * 0.05);

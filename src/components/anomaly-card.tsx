@@ -55,19 +55,19 @@ export function AnomalyCard({ anomaly, mentionsHref, compact = false }: AnomalyC
 
       {explanation.stories[0] && explanation.stories[0].publications >= 2 ? (
         <p className="mt-2 border-l-2 border-line-strong pl-3 font-display text-[1.05rem] leading-snug">
-          “{explanation.stories[0].title}”
-          <span className="reading ml-2 font-sans text-[0.75rem] text-ink-muted">{formatNumber(explanation.stories[0].publications)} yayın</span>
+          “{explanation.stories[0].title}”<span className="reading ml-2 font-sans text-[0.75rem] text-ink-muted">{formatNumber(explanation.stories[0].publications)} yayın</span>
         </p>
       ) : null}
 
       {compact ? null : (
         <dl className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-3">
           <Fact label="Artışın kaynağı">
-            {explanation.sources.filter((source) => source.excessShare > 0.02).map((source) => `${source.label} ${formatPercent(source.excessShare)}`).join(" · ") || "—"}
+            {explanation.sources
+              .filter((source) => source.excessShare > 0.02)
+              .map((source) => `${source.label} ${formatPercent(source.excessShare)}`)
+              .join(" · ") || "—"}
           </Fact>
-          <Fact label="Konular">
-            {explanation.topics.map((topic) => `${topic.name} (${formatNumber(topic.count)})`).join(" · ") || "Tanımlı konularla eşleşme yok"}
-          </Fact>
+          <Fact label="Konular">{explanation.topics.map((topic) => `${topic.name} (${formatNumber(topic.count)})`).join(" · ") || "Tanımlı konularla eşleşme yok"}</Fact>
           <Fact label="Olumsuz oranı">
             <span className="reading">
               {formatPercent(anomaly.baselineNegativeShare)} → {formatPercent(anomaly.negativeShare)}

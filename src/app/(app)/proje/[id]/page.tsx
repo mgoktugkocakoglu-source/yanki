@@ -44,17 +44,13 @@ function readouts(projectId: string, overview: Overview): ReadoutItem[] {
       label: "Tahmini erişim",
       value: summary.reachKnown > 0 ? `≈ ${formatCompact(summary.reach)}` : "—",
       note:
-        summary.reachKnown > 0
-          ? `tahmin; içeriğin ${formatPercent(share(summary.reachKnown, summary.total))} kadarında veri var`
-          : "kaynaklar takipçi ya da görüntülenme vermiyor",
+        summary.reachKnown > 0 ? `tahmin; içeriğin ${formatPercent(share(summary.reachKnown, summary.total))} kadarında veri var` : "kaynaklar takipçi ya da görüntülenme vermiyor",
       metric: "reach",
     },
     {
       label: "Olumlu içerik oranı",
       value: formatPercent(share(summary.positive, summary.total)),
-      note: previousSummary
-        ? `önceki dönemde ${formatPercent(share(previousSummary.positive, previousSummary.total))}`
-        : `${formatNumber(summary.positive)} olumlu içerik`,
+      note: previousSummary ? `önceki dönemde ${formatPercent(share(previousSummary.positive, previousSummary.total))}` : `${formatNumber(summary.positive)} olumlu içerik`,
       metric: "netTone",
     },
     {

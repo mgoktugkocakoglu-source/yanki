@@ -51,8 +51,14 @@ describe("anomali tespiti", () => {
   });
 
   it("düzeyi olumsuzluğa göre belirler", () => {
-    const negativeSpike = detectAnomalies(series([...steady, 150], (index) => (index === steady.length ? 0.8 : 0.2)), DAILY_OPTIONS)[0];
-    const positiveSpike = detectAnomalies(series([...steady, 150], (index) => (index === steady.length ? 0.05 : 0.2)), DAILY_OPTIONS)[0];
+    const negativeSpike = detectAnomalies(
+      series([...steady, 150], (index) => (index === steady.length ? 0.8 : 0.2)),
+      DAILY_OPTIONS,
+    )[0];
+    const positiveSpike = detectAnomalies(
+      series([...steady, 150], (index) => (index === steady.length ? 0.05 : 0.2)),
+      DAILY_OPTIONS,
+    )[0];
     expect(negativeSpike.level).toBe("critical");
     expect(positiveSpike.level).toBe("info");
   });

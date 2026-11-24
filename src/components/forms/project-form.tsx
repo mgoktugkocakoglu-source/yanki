@@ -129,8 +129,7 @@ export function ProjectForm({ projectId, workspaceId, initial, connectors }: Pro
     setFields((current) => ({ ...current, [key]: value }));
   };
 
-  const toggleConnector = (id: string) =>
-    setSelected((current) => (current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id]));
+  const toggleConnector = (id: string) => setSelected((current) => (current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id]));
 
   const runPreview = () => startPreview(async () => setPreview(await previewQueryAction(trimmed, selected)));
 
@@ -247,11 +246,11 @@ export function ProjectForm({ projectId, workspaceId, initial, connectors }: Pro
                 <span className="flex flex-wrap items-center gap-1.5 font-semibold">
                   {connector.name}
                   {connector.personalOnly ? (
-                    <span className="rounded border border-saffron/50 bg-saffron-wash px-1.5 py-0.5 text-[0.6875rem] font-semibold text-saffron-ink">Yalnızca kişisel kullanım</span>
+                    <span className="rounded border border-saffron/50 bg-saffron-wash px-1.5 py-0.5 text-[0.6875rem] font-semibold text-saffron-ink">
+                      Yalnızca kişisel kullanım
+                    </span>
                   ) : null}
-                  {connector.metered ? (
-                    <span className="rounded border border-line bg-sunken px-1.5 py-0.5 text-[0.6875rem] font-semibold text-ink-soft">Ücretli</span>
-                  ) : null}
+                  {connector.metered ? <span className="rounded border border-line bg-sunken px-1.5 py-0.5 text-[0.6875rem] font-semibold text-ink-soft">Ücretli</span> : null}
                 </span>
                 {connector.missingSetting ? (
                   <span className="mt-1 block text-[0.8125rem] font-medium text-saffron-ink">

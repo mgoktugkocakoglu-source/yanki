@@ -19,9 +19,7 @@ export default async function SettingsPage({ params }: PageProps<"/proje/[id]/ay
 
   const { project, workspace } = context;
   const isDemo = workspace.kind === "demo";
-  const topicsText = (await listTopics(project.id))
-    .map((topic) => `${topic.groupName} | ${topic.name} | ${queryToTopicTerms(topic.query)}`)
-    .join("\n");
+  const topicsText = (await listTopics(project.id)).map((topic) => `${topic.groupName} | ${topic.name} | ${queryToTopicTerms(topic.query)}`).join("\n");
 
   return (
     <PageContainer>

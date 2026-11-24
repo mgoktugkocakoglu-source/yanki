@@ -17,8 +17,7 @@ interface RunRow {
   message: string | null;
 }
 
-const RUN_COLUMNS =
-  "id, workspace_id, project_id, connector_id, started_at, finished_at, status, fetched, matched, inserted, message";
+const RUN_COLUMNS = "id, workspace_id, project_id, connector_id, started_at, finished_at, status, fetched, matched, inserted, message";
 
 function toRun(row: RunRow): CollectionRun {
   return {
@@ -39,45 +38,41 @@ function toRun(row: RunRow): CollectionRun {
 export async function recordRun(run: Omit<CollectionRun, "id">): Promise<CollectionRun> {
   const saved: CollectionRun = { id: randomUUID(), ...run };
   await execute(`INSERT INTO collection_runs (${RUN_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
-        saved.id,
-        saved.workspaceId,
-        saved.projectId,
-        saved.connectorId,
-        saved.startedAt,
-        saved.finishedAt,
-        saved.status,
-        saved.fetched,
-        saved.matched,
-        saved.inserted,
-        saved.message,
-      ]);
+    saved.id,
+    saved.workspaceId,
+    saved.projectId,
+    saved.connectorId,
+    saved.startedAt,
+    saved.finishedAt,
+    saved.status,
+    saved.fetched,
+    saved.matched,
+    saved.inserted,
+    saved.message,
+  ]);
   return saved;
 }
 
 export async function listRuns(projectId: string, limit: number): Promise<CollectionRun[]> {
-  return (await queryAll<RunRow>(
-      `SELECT ${RUN_COLUMNS} FROM collection_runs WHERE project_id = ? ORDER BY started_at DESC LIMIT ?`,
-      [projectId, limit],
-    )).map(toRun);
+  return (await queryAll<RunRow>(`SELECT ${RUN_COLUMNS} FROM collection_runs WHERE project_id = ? ORDER BY started_at DESC LIMIT ?`, [projectId, limit])).map(toRun);
 }
 
 /** Her bağlayıcının bu projedeki en son çalışması. */
 export async function latestRunPerConnector(projectId: string): Promise<CollectionRun[]> {
-  return (await queryAll<RunRow>(
+  return (
+    await queryAll<RunRow>(
       `SELECT ${RUN_COLUMNS} FROM collection_runs r
      WHERE r.project_id = ? AND r.started_at = (
        SELECT MAX(started_at) FROM collection_runs WHERE project_id = r.project_id AND connector_id = r.connector_id
      )`,
       [projectId],
-    )).map(toRun);
+    )
+  ).map(toRun);
 }
 
 /** Bir bağlayıcının belirli bir andan beri tüm projelerde okuduğu içerik sayısı (günlük sınır için). */
 export async function fetchedSince(connectorId: string, since: number): Promise<number> {
-  const row = await queryOne<{ total: number | null }>(
-      "SELECT SUM(fetched) AS total FROM collection_runs WHERE connector_id = ? AND started_at >= ?",
-      [connectorId, since],
-    );
+  const row = await queryOne<{ total: number | null }>("SELECT SUM(fetched) AS total FROM collection_runs WHERE connector_id = ? AND started_at >= ?", [connectorId, since]);
   return row?.total ?? 0;
 }
 
@@ -110,10 +105,10 @@ export interface AuditInput {
 export async function recordAudit(input: AuditInput, now: number = Date.now()): Promise<void> {
   const actor = input.actor ?? config.localActor;
   await execute(
-        `INSERT INTO audit_events (id, workspace_id, actor, action, object_type, object_id, detail, created_at, org_id)
+    `INSERT INTO audit_events (id, workspace_id, actor, action, object_type, object_id, detail, created_at, org_id)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, (SELECT org_id FROM users WHERE email = ?)))`,
-        [randomUUID(), input.workspaceId, actor, input.action, input.objectType, input.objectId ?? null, input.detail ?? null, now, input.orgId ?? null, actor],
-      );
+    [randomUUID(), input.workspaceId, actor, input.action, input.objectType, input.objectId ?? null, input.detail ?? null, now, input.orgId ?? null, actor],
+  );
 }
 
 function toAuditEvent(row: AuditRow): AuditEvent {
@@ -142,11 +137,13 @@ export async function listOrgAuditEvents(orgId: string, limit: number): Promise<
 }
 
 export async function listAuditEvents(workspaceId: string, limit: number): Promise<AuditEvent[]> {
-  return (await queryAll<AuditRow>(
+  return (
+    await queryAll<AuditRow>(
       `SELECT id, workspace_id, actor, action, object_type, object_id, detail, created_at
      FROM audit_events WHERE workspace_id = ? OR workspace_id IS NULL ORDER BY created_at DESC LIMIT ?`,
       [workspaceId, limit],
-    )).map((row) => ({
+    )
+  ).map((row) => ({
     id: row.id,
     workspaceId: row.workspace_id,
     actor: row.actor,

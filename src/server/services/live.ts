@@ -50,23 +50,24 @@ export async function getLiveSnapshot(project: Project, workspace: Workspace, no
   const filter: MentionFilter = { projectId: project.id, range };
 
   const observed = new Map((await timeSeries(filter, "hour")).map((point) => [point.bucketStart, point]));
-  const series = enumerateBuckets(range, "hour").map(
-    (bucketStart) => observed.get(bucketStart) ?? { bucketStart, total: 0, positive: 0, negative: 0, neutral: 0 },
-  );
+  const series = enumerateBuckets(range, "hour").map((bucketStart) => observed.get(bucketStart) ?? { bucketStart, total: 0, positive: 0, negative: 0, neutral: 0 });
 
   const anomalies = await findAnomalies(project.id, range, "hour");
-  const alerts = (await Promise.all(rankAnomalies(anomalies)
-      .slice(0, MAX_ALERTS)
-      .map(async (anomaly) => explainAnomaly(project, anomaly, "hour"))))
-    .map((anomaly) => {
-      const leadStory = anomaly.explanation.stories.at(0);
-      return {
-        bucketStart: anomaly.bucketStart,
-        level: anomaly.level,
-        headline: anomaly.explanation.headline,
-        story: leadStory && leadStory.publications >= 2 ? leadStory.title : null,
-      };
-    });
+  const alerts = (
+    await Promise.all(
+      rankAnomalies(anomalies)
+        .slice(0, MAX_ALERTS)
+        .map(async (anomaly) => explainAnomaly(project, anomaly, "hour")),
+    )
+  ).map((anomaly) => {
+    const leadStory = anomaly.explanation.stories.at(0);
+    return {
+      bucketStart: anomaly.bucketStart,
+      level: anomaly.level,
+      headline: anomaly.explanation.headline,
+      story: leadStory && leadStory.publications >= 2 ? leadStory.title : null,
+    };
+  });
 
   const previous = previousRange(range);
   const coverageStart = await earliestPublishedAt(project.id);

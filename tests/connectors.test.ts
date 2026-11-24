@@ -28,7 +28,12 @@ describe("bağlayıcı kaydı", () => {
 
 describe("Reddit", () => {
   it("grupları AND, grup içini OR ile birleştirir", () => {
-    expect(redditQuery([["İran", "Iran"], ["İsrail", "Israel"]])).toBe("(İran OR Iran) AND (İsrail OR Israel)");
+    expect(
+      redditQuery([
+        ["İran", "Iran"],
+        ["İsrail", "Israel"],
+      ]),
+    ).toBe("(İran OR Iran) AND (İsrail OR Israel)");
     expect(redditQuery([["COP31"]])).toBe("COP31");
   });
 

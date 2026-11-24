@@ -33,9 +33,9 @@ function toShare(row: ShareRow): ReportShare {
 /** Proje ve dönem için etkin bağlantı varsa onu döndürür, yoksa yenisini oluşturur. */
 export async function ensureShare(workspaceId: string, projectId: string, rangeKey: RangeKey, now: number): Promise<ReportShare> {
   const existing = await queryOne<ShareRow>(`SELECT ${COLUMNS} FROM report_shares WHERE project_id = ? AND range_key = ? AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 1`, [
-      projectId,
-      rangeKey,
-    ]);
+    projectId,
+    rangeKey,
+  ]);
   if (existing) return toShare(existing);
 
   const token = randomBytes(24).toString("base64url");
@@ -54,5 +54,5 @@ export async function listActiveShares(projectId: string): Promise<ReportShare[]
 }
 
 export async function revokeShare(token: string, now: number): Promise<boolean> {
-  return await execute("UPDATE report_shares SET revoked_at = ? WHERE token = ? AND revoked_at IS NULL", [now, token]) > 0;
+  return (await execute("UPDATE report_shares SET revoked_at = ? WHERE token = ? AND revoked_at IS NULL", [now, token])) > 0;
 }

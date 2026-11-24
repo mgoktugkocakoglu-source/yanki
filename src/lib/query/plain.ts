@@ -40,7 +40,12 @@ export function languageLabel(code: string): string {
 export function splitTerms(value: string): string[] {
   const terms = value
     .split(/[,;\n]+/)
-    .map((term) => term.replace(/["“”()*=:|]/g, " ").replace(/\s+/g, " ").trim())
+    .map((term) =>
+      term
+        .replace(/["“”()*=:|]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim(),
+    )
     .filter((term) => term !== "");
   return [...new Set(terms)];
 }
@@ -105,8 +110,7 @@ const FIELD_LABELS: Record<FieldNode["field"], string> = {
 
 function describeField(node: FieldNode, negated: boolean): string {
   const spec = FIELD_SPECS.find((entry) => entry.name === node.field);
-  const value =
-    node.field === "lang" ? languageLabel(String(node.value)) : (spec?.values?.[String(node.value)]?.[0] ?? String(node.value));
+  const value = node.field === "lang" ? languageLabel(String(node.value)) : (spec?.values?.[String(node.value)]?.[0] ?? String(node.value));
   const comparison = node.op === "=" ? "" : `${node.op} `;
   const label = FIELD_LABELS[node.field];
   return `${label}: ${negated ? "şu olmayan: " : ""}${comparison}${value}`;

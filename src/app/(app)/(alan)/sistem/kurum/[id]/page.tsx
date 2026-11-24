@@ -37,7 +37,11 @@ export default async function OrganizationPage({ params }: PageProps<"/sistem/ku
       </p>
       <PageHeading
         title={organization.name}
-        lead={suspended ? "Kurum askıda: kullanıcıları giriş yapamaz. Verileri ve kredileri korunur." : "Kurumun yöneticilerini atayın, yetkilerini belirleyin ve kredi havuzunu yönetin."}
+        lead={
+          suspended
+            ? "Kurum askıda: kullanıcıları giriş yapamaz. Verileri ve kredileri korunur."
+            : "Kurumun yöneticilerini atayın, yetkilerini belirleyin ve kredi havuzunu yönetin."
+        }
         actions={
           <form action={setOrganizationSuspendedAction}>
             <input type="hidden" name="orgId" value={organization.id} />

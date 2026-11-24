@@ -64,7 +64,10 @@ export async function scanClaims(
     const extracted = draft.claims
       .map((claim) => ({
         text: claim.text.trim(),
-        queries: claim.searchQueries.map((query) => query.trim()).filter(Boolean).slice(0, SEARCHES_PER_CLAIM),
+        queries: claim.searchQueries
+          .map((query) => query.trim())
+          .filter(Boolean)
+          .slice(0, SEARCHES_PER_CLAIM),
         mentions: [...new Set(claim.mentionNumbers)].flatMap((number) => {
           const mention = Number.isInteger(number) ? mentions[number - 1] : undefined;
           return mention ? [mention] : [];
@@ -140,18 +143,18 @@ export async function scanClaims(
     });
 
     const run = await saveClaimRun({
-          workspaceId: project.workspaceId,
-          projectId: project.id,
-          rangeKey,
-          range,
-          model: provider.model,
-          mentionsSent: mentions.length,
-          mentionsTotal: await countMentions(filter),
-          factCheckStatus: status,
-          factCheckMessage: message,
-          createdAt: now,
-          claims,
-        });
+      workspaceId: project.workspaceId,
+      projectId: project.id,
+      rangeKey,
+      range,
+      model: provider.model,
+      mentionsSent: mentions.length,
+      mentionsTotal: await countMentions(filter),
+      factCheckStatus: status,
+      factCheckMessage: message,
+      createdAt: now,
+      claims,
+    });
     return { ok: true, run };
   } catch (error) {
     const message = error instanceof AiError ? error.message : "İddia taraması sırasında beklenmeyen bir hata oluştu.";

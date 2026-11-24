@@ -67,12 +67,7 @@ function readResults(draft: ClassifyDraft, batch: Mention[], topicIds: string[])
   return classifications;
 }
 
-export async function classifyMentions(
-  project: Project,
-  rangeKey: RangeKey,
-  now: number,
-  provider: AiProvider | null = getAiProvider(),
-): Promise<ClassifyOutcome> {
+export async function classifyMentions(project: Project, rangeKey: RangeKey, now: number, provider: AiProvider | null = getAiProvider()): Promise<ClassifyOutcome> {
   if (!provider) return { ok: false, reason: "disabled", message: "Yapay zekâ sınıflandırması bu kurulumda kapalı." };
 
   const filter: MentionFilter = { projectId: project.id, range: resolveRange(rangeKey, now) };
@@ -134,7 +129,7 @@ export async function classifyMentions(
     toneChanged,
     topicsAdded,
     failedBatches,
-    remaining: await countMentions(filter) - await countAiClassified(filter),
+    remaining: (await countMentions(filter)) - (await countAiClassified(filter)),
     inputTokens,
     outputTokens,
   };

@@ -130,14 +130,7 @@ export function MentionCard({ mention, queries, topicNames, now, editable = true
               Detay
             </Link>
           ) : null}
-          {editable ? (
-            <MentionActions
-              mentionId={mention.id}
-              modelSentiment={mention.sentiment}
-              override={mention.sentimentOverride}
-              isIrrelevant={mention.isIrrelevant}
-            />
-          ) : null}
+          {editable ? <MentionActions mentionId={mention.id} modelSentiment={mention.sentiment} override={mention.sentimentOverride} isIrrelevant={mention.isIrrelevant} /> : null}
         </div>
       </footer>
     </article>

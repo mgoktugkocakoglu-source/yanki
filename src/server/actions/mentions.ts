@@ -16,13 +16,13 @@ export async function setToneAction(mentionId: string, sentiment: Sentiment | nu
   if (!allowed) return;
   await setSentimentOverride(mentionId, sentiment);
   await recordAudit({
-        actor: viewer?.email,
-        workspaceId: mention.workspaceId,
-        action: "ton.düzeltildi",
-        objectType: "bahsetme",
-        objectId: mentionId,
-        detail: sentiment ? `${mention.sentiment} → ${sentiment}` : "düzeltme geri alındı",
-      });
+    actor: viewer?.email,
+    workspaceId: mention.workspaceId,
+    action: "ton.düzeltildi",
+    objectType: "bahsetme",
+    objectId: mentionId,
+    detail: sentiment ? `${mention.sentiment} → ${sentiment}` : "düzeltme geri alındı",
+  });
   refresh();
 }
 
@@ -33,11 +33,11 @@ export async function setIrrelevantAction(mentionId: string, isIrrelevant: boole
   if (!allowed) return;
   await setIrrelevant(mentionId, isIrrelevant);
   await recordAudit({
-        actor: viewer?.email,
-        workspaceId: mention.workspaceId,
-        action: isIrrelevant ? "ilgisiz.işaretlendi" : "ilgisiz.geri-alındı",
-        objectType: "bahsetme",
-        objectId: mentionId,
-      });
+    actor: viewer?.email,
+    workspaceId: mention.workspaceId,
+    action: isIrrelevant ? "ilgisiz.işaretlendi" : "ilgisiz.geri-alındı",
+    objectType: "bahsetme",
+    objectId: mentionId,
+  });
   refresh();
 }

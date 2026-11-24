@@ -55,7 +55,7 @@ export async function loadProjectContext(projectId: string): Promise<ProjectCont
   const workspace = project ? await getWorkspace(project.workspaceId) : null;
   // Başkasının konusu "yok" gibi davranır; varlığı da sızmaz.
   if (!project || !workspace || !(await loadCanSeeProject(viewer, project))) return null;
-  return { now, project, workspace, siblings: (await loadVisibleProjects(viewer, await listProjects(workspace.id))), workspaces: await listWorkspaces(), viewer };
+  return { now, project, workspace, siblings: await loadVisibleProjects(viewer, await listProjects(workspace.id)), workspaces: await listWorkspaces(), viewer };
 }
 
 export interface WorkspaceContext {
@@ -73,7 +73,7 @@ export async function loadWorkspaceContext(): Promise<WorkspaceContext> {
   const workspaces = await listWorkspaces();
   const selectedId = (await cookies()).get(WORKSPACE_COOKIE)?.value;
   const workspace = workspaces.find((entry) => entry.id === selectedId) ?? workspaces.find((entry) => entry.kind === "live") ?? workspaces[0];
-  return { now, workspace, projects: (await loadVisibleProjects(viewer, await listProjects(workspace.id))), workspaces, viewer };
+  return { now, workspace, projects: await loadVisibleProjects(viewer, await listProjects(workspace.id)), workspaces, viewer };
 }
 
 export async function rememberWorkspace(workspaceId: string): Promise<void> {

@@ -81,7 +81,7 @@ export async function getUser(id: string): Promise<User | null> {
 }
 
 export async function emailTaken(email: string): Promise<boolean> {
-  return await queryOne("SELECT 1 FROM users WHERE email = ?", [normalizeEmail(email)]) !== undefined;
+  return (await queryOne("SELECT 1 FROM users WHERE email = ?", [normalizeEmail(email)])) !== undefined;
 }
 
 /** Giriş için: kullanıcı ve saklanan parola özeti. */
@@ -123,16 +123,16 @@ export async function insertUser(input: NewUser, now: number): Promise<User> {
     lastLoginAt: null,
   };
   await execute("INSERT INTO users (id, email, name, role, org_id, password_hash, credits, created_at, password_changed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
-        user.id,
-        user.email,
-        user.name,
-        user.role,
-        user.orgId,
-        input.passwordHash,
-        user.credits,
-        now,
-        now,
-      ]);
+    user.id,
+    user.email,
+    user.name,
+    user.role,
+    user.orgId,
+    input.passwordHash,
+    user.credits,
+    now,
+    now,
+  ]);
   for (const permission of permissions) {
     await execute("INSERT INTO user_permissions (user_id, permission, granted_by, granted_at) VALUES (?, ?, ?, ?)", [user.id, permission, input.grantedBy ?? "sistem", now]);
   }
@@ -148,41 +148,42 @@ export async function createUser(input: NewUser, now: number): Promise<User | nu
 
 export async function setUserDisabled(id: string, disabled: boolean, now: number): Promise<void> {
   await transaction(async () => {
-        await execute("UPDATE users SET disabled_at = ? WHERE id = ?", [disabled ? now : null, id]);
-        if (disabled) await execute("DELETE FROM sessions WHERE user_id = ?", [id]);
-      });
+    await execute("UPDATE users SET disabled_at = ? WHERE id = ?", [disabled ? now : null, id]);
+    if (disabled) await execute("DELETE FROM sessions WHERE user_id = ?", [id]);
+  });
 }
 
 /** Kurum içi rol değişikliği. Yöneticilikten alınan kişinin yetkileri de silinir. */
 export async function setUserRole(id: string, role: Exclude<UserRole, "sysadmin">): Promise<boolean> {
   return await transaction(async () => {
-      const changed = await execute("UPDATE users SET role = ? WHERE id = ? AND role <> 'sysadmin' AND role <> ?", [role, id, role]);
-      if (changed === 0) return false;
-      if (role === "analyst") await execute("DELETE FROM user_permissions WHERE user_id = ?", [id]);
-      return true;
-    });
+    const changed = await execute("UPDATE users SET role = ? WHERE id = ? AND role <> 'sysadmin' AND role <> ?", [role, id, role]);
+    if (changed === 0) return false;
+    if (role === "analyst") await execute("DELETE FROM user_permissions WHERE user_id = ?", [id]);
+    return true;
+  });
 }
 
 /** Kurum yöneticisinin yetkilerini verilen listeyle değiştirir. */
 export async function setPermissions(userId: string, permissions: readonly Permission[], grantedBy: string, now: number): Promise<void> {
   const wanted = cleanPermissions(permissions);
   await transaction(async () => {
-        const current = new Set(await loadPermissions(userId));
-        for (const permission of current) {
-          if (!wanted.includes(permission)) await execute("DELETE FROM user_permissions WHERE user_id = ? AND permission = ?", [userId, permission]);
-        }
-        for (const permission of wanted) {
-          if (!current.has(permission)) await execute("INSERT INTO user_permissions (user_id, permission, granted_by, granted_at) VALUES (?, ?, ?, ?)", [userId, permission, grantedBy, now]);
-        }
-      });
+    const current = new Set(await loadPermissions(userId));
+    for (const permission of current) {
+      if (!wanted.includes(permission)) await execute("DELETE FROM user_permissions WHERE user_id = ? AND permission = ?", [userId, permission]);
+    }
+    for (const permission of wanted) {
+      if (!current.has(permission))
+        await execute("INSERT INTO user_permissions (user_id, permission, granted_by, granted_at) VALUES (?, ?, ?, ?)", [userId, permission, grantedBy, now]);
+    }
+  });
 }
 
 /** Parolayı değiştirir ve (varsa korunacak olan dışında) tüm oturumları kapatır. */
 export async function setPassword(userId: string, passwordHash: string, now: number, keepToken: string | null = null): Promise<void> {
   await transaction(async () => {
-        await execute("UPDATE users SET password_hash = ?, password_changed_at = ? WHERE id = ?", [passwordHash, now, userId]);
-        await execute("DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?", [userId, keepToken ? hashToken(keepToken) : ""]);
-      });
+    await execute("UPDATE users SET password_hash = ?, password_changed_at = ? WHERE id = ?", [passwordHash, now, userId]);
+    await execute("DELETE FROM sessions WHERE user_id = ? AND token_hash <> ?", [userId, keepToken ? hashToken(keepToken) : ""]);
+  });
 }
 
 export async function touchLogin(userId: string, now: number): Promise<void> {
@@ -202,11 +203,11 @@ export async function recordUserLedger(userId: string, delta: number, reason: st
 export async function adjustCredits(userId: string, delta: number, reason: string, objectId: string | null, now: number): Promise<boolean> {
   if (!Number.isInteger(delta) || delta === 0) return false;
   return await transaction(async () => {
-      const changed = await execute("UPDATE users SET credits = credits + ? WHERE id = ? AND credits + ? >= 0", [delta, userId, delta]);
-      if (changed === 0) return false;
-      await recordUserLedger(userId, delta, reason, objectId, now);
-      return true;
-    });
+    const changed = await execute("UPDATE users SET credits = credits + ? WHERE id = ? AND credits + ? >= 0", [delta, userId, delta]);
+    if (changed === 0) return false;
+    await recordUserLedger(userId, delta, reason, objectId, now);
+    return true;
+  });
 }
 
 export interface LedgerEntry {
@@ -216,10 +217,12 @@ export interface LedgerEntry {
 }
 
 export async function listLedger(userId: string, limit: number): Promise<LedgerEntry[]> {
-  return (await queryAll<{ delta: number; reason: string; created_at: number }>(
+  return (
+    await queryAll<{ delta: number; reason: string; created_at: number }>(
       "SELECT delta, reason, created_at FROM credit_ledger WHERE user_id = ? ORDER BY created_at DESC, seq DESC LIMIT ?",
       [userId, limit],
-    )).map((row) => ({ delta: row.delta, reason: row.reason, createdAt: row.created_at }));
+    )
+  ).map((row) => ({ delta: row.delta, reason: row.reason, createdAt: row.created_at }));
 }
 
 /* ── Oturumlar ────────────────────────────────────────────────────────── */
@@ -246,11 +249,11 @@ export async function createSession(userId: string, now: number): Promise<string
 /** Geçerli oturumun kullanıcısı; oturum yoksa, süresi dolduysa, kullanıcı kapatıldıysa ya da kurumu askıdaysa null. */
 export async function getSessionUser(token: string, now: number): Promise<User | null> {
   const row = await queryOne<UserRow>(
-      `SELECT ${USER_COLUMNS}
+    `SELECT ${USER_COLUMNS}
      FROM sessions s JOIN users u ON u.id = s.user_id LEFT JOIN organizations o ON o.id = u.org_id
      WHERE s.token_hash = ? AND s.expires_at > ? AND u.disabled_at IS NULL AND o.suspended_at IS NULL`,
-      [hashToken(token), now],
-    );
+    [hashToken(token), now],
+  );
   return row ? await toUser(row) : null;
 }
 
@@ -272,8 +275,10 @@ export async function setProjectOwner(projectId: string, userId: string): Promis
 /** Proje kimliği → sahibi ve sahibinin kurumu. Kayıt yoksa proje ortaktır. */
 export async function listProjectOwners(): Promise<Map<string, ProjectOwner>> {
   return new Map(
-    (await queryAll<{ project_id: string; user_id: string; org_id: string | null }>(
-            "SELECT p.project_id, p.user_id, u.org_id FROM project_owners p JOIN users u ON u.id = p.user_id",
-          )).map((row) => [row.project_id, { userId: row.user_id, orgId: row.org_id }]),
+    (
+      await queryAll<{ project_id: string; user_id: string; org_id: string | null }>(
+        "SELECT p.project_id, p.user_id, u.org_id FROM project_owners p JOIN users u ON u.id = p.user_id",
+      )
+    ).map((row) => [row.project_id, { userId: row.user_id, orgId: row.org_id }]),
   );
 }

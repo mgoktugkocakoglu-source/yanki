@@ -132,8 +132,7 @@ export default async function AnalysisPage({ params, searchParams }: PageProps<"
         lead={
           <>
             {RANGE_PRESETS[rangeKey].label} · <span className="reading text-ink">{formatNumber(summary.total)}</span> içerik,{" "}
-            <span className="reading text-ink">{formatNumber(summary.sources)}</span> kaynak,{" "}
-            <span className="reading text-ink">{formatNumber(summary.authors)}</span> yazar
+            <span className="reading text-ink">{formatNumber(summary.sources)}</span> kaynak, <span className="reading text-ink">{formatNumber(summary.authors)}</span> yazar
           </>
         }
       />
@@ -158,7 +157,8 @@ export default async function AnalysisPage({ params, searchParams }: PageProps<"
         {analysis.topicGroups.length === 0 ? (
           <Panel title="Konu karnesi" className="lg:col-span-2">
             <p className="text-ink-soft">
-              Bu projede konu tanımlı değil. Ayarlar bölümünden “Teslimat”, “Fiyat” ya da mahalle adları gibi konular tanımladığınızda her birinin hacmi ve tonu burada karne olarak görünür.
+              Bu projede konu tanımlı değil. Ayarlar bölümünden “Teslimat”, “Fiyat” ya da mahalle adları gibi konular tanımladığınızda her birinin hacmi ve tonu burada karne olarak
+              görünür.
             </p>
           </Panel>
         ) : null}

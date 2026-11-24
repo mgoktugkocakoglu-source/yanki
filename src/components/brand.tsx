@@ -45,12 +45,7 @@ interface EchoGlyphProps {
   className?: string;
 }
 
-const ARCS = [
-  "M8 6.4a5.1 5.1 0 0 1 0 7.2",
-  "M11.2 4.3a8 8 0 0 1 0 11.4",
-  "M14.4 2.4a10.8 10.8 0 0 1 0 15.2",
-  "M17.6 0.8a13.4 13.4 0 0 1 0 18.4",
-];
+const ARCS = ["M8 6.4a5.1 5.1 0 0 1 0 7.2", "M11.2 4.3a8 8 0 0 1 0 11.4", "M14.4 2.4a10.8 10.8 0 0 1 0 15.2", "M17.6 0.8a13.4 13.4 0 0 1 0 18.4"];
 
 /**
  * Yankı işareti: içeriğin erişim basamağını halka sayısıyla gösterir.
@@ -63,13 +58,7 @@ export function EchoGlyph({ level, tone = "brand", className }: EchoGlyphProps) 
     <svg viewBox="0 0 22 20" className={className} aria-hidden="true" fill="none">
       <circle cx="3.6" cy="10" r="2.4" fill={color} />
       {ARCS.map((path, index) => (
-        <path
-          key={path}
-          d={path}
-          stroke={index < level ? color : "var(--line-strong)"}
-          strokeWidth="1.7"
-          strokeLinecap="round"
-        />
+        <path key={path} d={path} stroke={index < level ? color : "var(--line-strong)"} strokeWidth="1.7" strokeLinecap="round" />
       ))}
     </svg>
   );

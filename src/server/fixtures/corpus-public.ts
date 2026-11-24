@@ -44,10 +44,7 @@ const MUNICIPALITY: DemoProjectSpec = {
         "{marka} yeni otobüsleri çok temiz ve rahat, emeği geçenlere teşekkür ederim.",
         "{marka} gece seferlerini başlatmış, çok faydalı bir hizmet olmuş.",
       ],
-      neutral: [
-        "{marka} {yer} hattı sefer saatleri değişti mi?",
-        "{yer} durağından metroya aktarma ücretsiz mi, {marka} bilgi verir misiniz?",
-      ],
+      neutral: ["{marka} {yer} hattı sefer saatleri değişti mi?", "{yer} durağından metroya aktarma ücretsiz mi, {marka} bilgi verir misiniz?"],
     },
     {
       weight: 20,
@@ -59,10 +56,7 @@ const MUNICIPALITY: DemoProjectSpec = {
         "Yağmur yağınca {yer} göle dönüyor, altyapı yetersiz. {marka} yıllardır çözmedi.",
         "{marka} yol çalışması {n} aydır bitmedi, esnaf mağdur.",
       ],
-      positive: [
-        "{yer} caddesi sonunda asfaltlandı, {marka} ekiplerine teşekkürler.",
-        "{marka} kaldırımları yenilemiş, {yer} çok güzel olmuş.",
-      ],
+      positive: ["{yer} caddesi sonunda asfaltlandı, {marka} ekiplerine teşekkürler.", "{marka} kaldırımları yenilemiş, {yer} çok güzel olmuş."],
       neutral: ["{marka} {yer} yol çalışması ne zaman bitecek?"],
     },
     {
@@ -73,19 +67,13 @@ const MUNICIPALITY: DemoProjectSpec = {
         "Konteynerler taşmış, kediler köpekler dağıtıyor. {marka} temizlik ekibi gelmedi.",
         "{marka} çöp toplama saatlerini değiştirmiş, kimseye haber vermemiş. {yer} pislik içinde.",
       ],
-      positive: [
-        "{yer} sabah erkenden tertemiz yapılmış, {marka} temizlik işçilerine teşekkür ederim.",
-        "{marka} yeni konteynerler koymuş, sokak çok daha temiz.",
-      ],
+      positive: ["{yer} sabah erkenden tertemiz yapılmış, {marka} temizlik işçilerine teşekkür ederim.", "{marka} yeni konteynerler koymuş, sokak çok daha temiz."],
       neutral: ["{marka} iri hacimli atıkları hangi gün topluyor?"],
     },
     {
       weight: 12,
       mix: [0.25, 0.6, 0.15],
-      negative: [
-        "{yer} parkındaki oyun grubu kırık, çocuklar için tehlikeli. {marka} ilgilenmiyor.",
-        "{marka} ağaçları kesip otopark yapıyor, {yer} halkı tepkili.",
-      ],
+      negative: ["{yer} parkındaki oyun grubu kırık, çocuklar için tehlikeli. {marka} ilgilenmiyor.", "{marka} ağaçları kesip otopark yapıyor, {yer} halkı tepkili."],
       positive: [
         "{yer} parkı yenilenmiş, çocuklar bayıldı. {marka} için teşekkürler.",
         "{marka} {yer} sahiline yüzlerce fidan dikmiş, harika bir çalışma.",
@@ -108,20 +96,14 @@ const MUNICIPALITY: DemoProjectSpec = {
     {
       weight: 8,
       mix: [0.55, 0.25, 0.2],
-      negative: [
-        "{yer} kaldırımı işgal altında, yürünmüyor. {marka} zabıtası neden denetim yapmıyor?",
-        "{marka} zabıtası seyyar satıcılara çok kaba davrandı, bu yakışmadı.",
-      ],
+      negative: ["{yer} kaldırımı işgal altında, yürünmüyor. {marka} zabıtası neden denetim yapmıyor?", "{marka} zabıtası seyyar satıcılara çok kaba davrandı, bu yakışmadı."],
       positive: ["{marka} zabıta ekipleri fahiş fiyat denetimi yapmış, tebrikler."],
       neutral: ["{marka} zabıta şikâyet hattı numarası kaç?"],
     },
     {
       weight: 6,
       mix: [0.8, 0.05, 0.15],
-      negative: [
-        "{yer} mahallesinde sular kesik, {marka} açıklama yapmadı.",
-        "{yer} iki gündür susuz, {marka} neden tanker göndermiyor?",
-      ],
+      negative: ["{yer} mahallesinde sular kesik, {marka} açıklama yapmadı.", "{yer} iki gündür susuz, {marka} neden tanker göndermiyor?"],
       positive: ["{marka} su kesintisi boyunca {yer} mahallesine tanker gönderdi, teşekkürler."],
       neutral: ["{marka} {yer} su kesintisi ne zaman bitecek?"],
     },
@@ -141,7 +123,10 @@ const MUNICIPALITY: DemoProjectSpec = {
       boost: [4.2, 2.6, 1.2],
       newsShare: 0.3,
       headlines: [
-        { title: "Örnekşehir'de ana isale hattı arızası: Yıldıztepe ve Çınarlı'da su kesintisi", summary: "Örnekşehir Belediyesi, arızanın giderilmesi için ekiplerin çalıştığını duyurdu." },
+        {
+          title: "Örnekşehir'de ana isale hattı arızası: Yıldıztepe ve Çınarlı'da su kesintisi",
+          summary: "Örnekşehir Belediyesi, arızanın giderilmesi için ekiplerin çalıştığını duyurdu.",
+        },
         { title: "Örnekşehir Belediyesi: su kesintisi yarın sabaha kadar giderilecek", summary: "Belediye, mahallelere tankerle su dağıtılacağını açıkladı." },
       ],
       posts: [
@@ -157,9 +142,7 @@ const MUNICIPALITY: DemoProjectSpec = {
       daysAgo: 20,
       boost: [2.8, 1.5],
       newsShare: 0.35,
-      headlines: [
-        { title: "Örnekşehir Belediyesi öğrencilere ücretsiz ulaşım kararı aldı", summary: "Karar ay başından itibaren tüm otobüs ve metro hatlarında geçerli olacak." },
-      ],
+      headlines: [{ title: "Örnekşehir Belediyesi öğrencilere ücretsiz ulaşım kararı aldı", summary: "Karar ay başından itibaren tüm otobüs ve metro hatlarında geçerli olacak." }],
       posts: [
         "{marka} öğrencilere ücretsiz ulaşım kararı almış, harika bir haber. Teşekkürler.",
         "Ücretsiz ulaşım için {marka} yönetimini tebrik ederim, öğrenciler çok sevindi.",
@@ -224,23 +207,14 @@ const WATER_UTILITY: DemoProjectSpec = {
     {
       weight: 14,
       mix: [0.6, 0.28, 0.12],
-      negative: [
-        "{yer} sokağında boru patlak, su {n} saattir boşa akıyor. {marka} ekibi gelmedi.",
-        "{marka} arıza hattına ulaşamıyorum, patlak borudan ev su içinde.",
-      ],
-      positive: [
-        "{marka} ekipleri patlak boruyu bir saatte onardı, teşekkür ederim.",
-        "{yer} mahallesindeki arıza hızlı giderildi, {marka} ekibine teşekkürler.",
-      ],
+      negative: ["{yer} sokağında boru patlak, su {n} saattir boşa akıyor. {marka} ekibi gelmedi.", "{marka} arıza hattına ulaşamıyorum, patlak borudan ev su içinde."],
+      positive: ["{marka} ekipleri patlak boruyu bir saatte onardı, teşekkür ederim.", "{yer} mahallesindeki arıza hızlı giderildi, {marka} ekibine teşekkürler."],
       neutral: ["{marka} planlı bakım çalışması hangi mahalleleri etkileyecek?"],
     },
     {
       weight: 8,
       mix: [0.78, 0.07, 0.15],
-      negative: [
-        "{yer} mahallesinde musluktan bulanık su akıyor, {marka} açıklama yapmalı.",
-        "Suda klor kokusu çok fazla, içilmiyor. {marka} su kalitesini kontrol ediyor mu?",
-      ],
+      negative: ["{yer} mahallesinde musluktan bulanık su akıyor, {marka} açıklama yapmalı.", "Suda klor kokusu çok fazla, içilmiyor. {marka} su kalitesini kontrol ediyor mu?"],
       positive: ["{marka} su kalitesi raporunu yayımlamış, şeffaflık için teşekkürler."],
       neutral: ["{marka} su analiz sonuçlarını nereden görebilirim?"],
     },
@@ -255,9 +229,7 @@ const WATER_UTILITY: DemoProjectSpec = {
       daysAgo: 6,
       boost: [5, 2.8, 1.2],
       newsShare: 0.3,
-      headlines: [
-        { title: "ÖRSU: ana isale hattındaki arıza nedeniyle iki mahallede su kesintisi", summary: "İdare, onarımın sürdüğünü ve tankerle su dağıtıldığını bildirdi." },
-      ],
+      headlines: [{ title: "ÖRSU: ana isale hattındaki arıza nedeniyle iki mahallede su kesintisi", summary: "İdare, onarımın sürdüğünü ve tankerle su dağıtıldığını bildirdi." }],
       posts: [
         "Yıldıztepe iki gündür susuz, {marka} arıza hattı açmıyor. Rezalet.",
         "{marka} ana hattaki arızayı hâlâ onaramadı, Çınarlı'da su yok.",

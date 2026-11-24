@@ -20,8 +20,8 @@ async function Invitation({ params }: { params: Promise<{ token: string }> }) {
   return (
     <>
       <TokenHeading title={`Hoş geldiniz, ${invitation.name}`}>
-        <span className="font-medium text-ink">{organization.name}</span> sizi Yankı&apos;ya {ROLE_LABELS[invitation.role].toLocaleLowerCase("tr")} olarak davet etti. Giriş e-postanız{" "}
-        <span className="reading break-all font-medium text-ink">{invitation.email}</span>. Parolanızı belirleyin.
+        <span className="font-medium text-ink">{organization.name}</span> sizi Yankı&apos;ya {ROLE_LABELS[invitation.role].toLocaleLowerCase("tr")} olarak davet etti. Giriş
+        e-postanız <span className="reading break-all font-medium text-ink">{invitation.email}</span>. Parolanızı belirleyin.
       </TokenHeading>
       <div className="mt-6">
         <TokenPasswordForm mode="invite" token={token} minLength={PASSWORD_MIN_LENGTH} />

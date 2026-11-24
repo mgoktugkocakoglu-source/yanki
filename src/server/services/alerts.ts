@@ -152,9 +152,7 @@ function buildHeadline(anomaly: Anomaly, explanation: Omit<AnomalyExplanation, "
         : `Olağan dönemde neredeyse hiç bahsetme yokken ${formatNumber(anomaly.observed)} bahsetme geldi.`,
     );
   } else {
-    parts.push(
-      `Hacim olağan, ancak olumsuz oranı ${formatPercent(anomaly.baselineNegativeShare)} düzeyinden ${formatPercent(anomaly.negativeShare)} düzeyine çıktı.`,
-    );
+    parts.push(`Hacim olağan, ancak olumsuz oranı ${formatPercent(anomaly.baselineNegativeShare)} düzeyinden ${formatPercent(anomaly.negativeShare)} düzeyine çıktı.`);
   }
 
   const leadSource = explanation.sources[0];

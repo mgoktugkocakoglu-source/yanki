@@ -105,9 +105,7 @@ async function collect(request: CollectRequest): Promise<CollectResult> {
   const token = await accessToken().catch(explain);
   const response = await fetchJson<SearchResponse>(`${SEARCH_ENDPOINT}?${params}`, { Authorization: `Bearer ${token}` }).catch(explain);
   const posts = (response.data?.children ?? []).map((child) => child.data).filter((post): post is RedditPost => post !== undefined);
-  const items = posts
-    .map(toRawItem)
-    .filter((item): item is RawItem => item !== null && item.publishedAt >= request.since);
+  const items = posts.map(toRawItem).filter((item): item is RawItem => item !== null && item.publishedAt >= request.since);
 
   const notes: string[] = [];
   if (posts.length >= limit) notes.push(`Sonuç sayfa sınırına ulaştı; en yeni ${limit} gönderi alındı.`);

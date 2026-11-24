@@ -14,6 +14,6 @@ export async function selectWorkspaceAction(formData: FormData): Promise<void> {
   const workspace = await getWorkspace(String(formData.get("workspaceId") ?? ""));
   if (!workspace) return;
   await rememberWorkspace(workspace.id);
-  const [firstProject] = (await loadVisibleProjects(viewer, await listProjects(workspace.id)));
+  const [firstProject] = await loadVisibleProjects(viewer, await listProjects(workspace.id));
   redirect(firstProject ? `/proje/${firstProject.id}` : "/projeler");
 }

@@ -1,12 +1,6 @@
 import { tokenize } from "../text/normalize";
 import type { TermMode } from "../text/turkish";
-import {
-  QuerySyntaxError,
-  type CompareOp,
-  type FieldNode,
-  type QueryNode,
-  type TextNode,
-} from "./ast";
+import { QuerySyntaxError, type CompareOp, type FieldNode, type QueryNode, type TextNode } from "./ast";
 import { findFieldSpec, resolveFieldValue } from "./fields";
 
 /**
@@ -58,10 +52,7 @@ function buildTextNode(raw: string, strict: boolean, position: number): TextNode
 function buildFieldNode(rawName: string, rawValue: string, position: number): FieldNode {
   const spec = findFieldSpec(rawName);
   if (!spec) {
-    throw new QuerySyntaxError(
-      `Bilinmeyen alan: "${rawName}". İçinde ":" geçen bir ifadeyi aramak için tırnak kullanın.`,
-      position,
-    );
+    throw new QuerySyntaxError(`Bilinmeyen alan: "${rawName}". İçinde ":" geçen bir ifadeyi aramak için tırnak kullanın.`, position);
   }
   const [, rawOp = "", rest = ""] = COMPARE_PATTERN.exec(rawValue) ?? [];
   const op = (rawOp || "=") as CompareOp;
@@ -192,10 +183,7 @@ function toTextGroup(node: QueryNode, position: number): TextNode[] {
   if (node.kind === "or" && node.children.every((child): child is TextNode => child.kind === "text")) {
     return node.children;
   }
-  throw new QuerySyntaxError(
-    "YAKIN yalnızca kelimeler, öbekler ya da bunların VEYA grupları arasında kullanılabilir.",
-    position,
-  );
+  throw new QuerySyntaxError("YAKIN yalnızca kelimeler, öbekler ya da bunların VEYA grupları arasında kullanılabilir.", position);
 }
 
 class Parser {
@@ -320,9 +308,7 @@ export function parseQuery(input: string): QueryNode {
   return new Parser(tokens, input.length).parse();
 }
 
-export type ParseOutcome =
-  | { ok: true; ast: QueryNode }
-  | { ok: false; message: string; position: number };
+export type ParseOutcome = { ok: true; ast: QueryNode } | { ok: false; message: string; position: number };
 
 /** Hata fırlatmayan sürüm; form doğrulaması ve canlı önizleme için. */
 export function tryParseQuery(input: string): ParseOutcome {

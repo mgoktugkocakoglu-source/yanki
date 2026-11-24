@@ -38,7 +38,15 @@ async function listDomains(orgId: string): Promise<string[]> {
 }
 
 async function toOrganization(row: OrganizationRow): Promise<Organization> {
-  return { id: row.id, name: row.name, creditPool: row.credit_pool, seatLimit: row.seat_limit, domains: await listDomains(row.id), createdAt: row.created_at, suspendedAt: row.suspended_at };
+  return {
+    id: row.id,
+    name: row.name,
+    creditPool: row.credit_pool,
+    seatLimit: row.seat_limit,
+    domains: await listDomains(row.id),
+    createdAt: row.created_at,
+    suspendedAt: row.suspended_at,
+  };
 }
 
 export async function getOrganization(id: string): Promise<Organization | null> {
@@ -54,20 +62,29 @@ export interface OrganizationSummary extends Organization {
 }
 
 export async function listOrganizations(): Promise<OrganizationSummary[]> {
-  return (await Promise.all((await queryAll<OrganizationRow & { admin_count: number; user_count: number; user_credits: number }>(
+  return await Promise.all(
+    (
+      await queryAll<OrganizationRow & { admin_count: number; user_count: number; user_credits: number }>(
         `SELECT ${COLUMNS},
             (SELECT COUNT(*) FROM users u WHERE u.org_id = o.id AND u.role = 'admin') AS admin_count,
             (SELECT COUNT(*) FROM users u WHERE u.org_id = o.id) AS user_count,
             (SELECT COALESCE(SUM(u.credits), 0) FROM users u WHERE u.org_id = o.id) AS user_credits
      FROM organizations o ORDER BY lower(o.name)`,
-      )).map(async (row) => ({ ...await toOrganization(row), adminCount: row.admin_count, userCount: row.user_count, userCredits: row.user_credits }))));
+      )
+    ).map(async (row) => ({ ...(await toOrganization(row)), adminCount: row.admin_count, userCount: row.user_count, userCredits: row.user_credits })),
+  );
 }
 
 /** Dolu koltuk: etkin hesaplar ve süresi dolmamış bekleyen davetler. */
 export async function seatsInUse(orgId: string, now: number): Promise<number> {
   const users = (await queryOne<{ count: number }>("SELECT COUNT(*) AS count FROM users WHERE org_id = ? AND disabled_at IS NULL", [orgId]))?.count ?? 0;
   const invites =
-    (await queryOne<{ count: number }>("SELECT COUNT(*) AS count FROM invitations WHERE org_id = ? AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > ?", [orgId, now]))?.count ?? 0;
+    (
+      await queryOne<{ count: number }>("SELECT COUNT(*) AS count FROM invitations WHERE org_id = ? AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at > ?", [
+        orgId,
+        now,
+      ])
+    )?.count ?? 0;
   return users + invites;
 }
 
@@ -83,7 +100,7 @@ async function replaceDomains(orgId: string, domains: readonly string[]): Promis
 }
 
 async function nameTaken(name: string, exceptId: string | null): Promise<boolean> {
-  return await queryOne("SELECT 1 FROM organizations WHERE lower(name) = lower(?) AND id <> ?", [name, exceptId ?? ""]) !== undefined;
+  return (await queryOne("SELECT 1 FROM organizations WHERE lower(name) = lower(?) AND id <> ?", [name, exceptId ?? ""])) !== undefined;
 }
 
 /** Aynı adda kurum varsa null döner. */
@@ -92,10 +109,10 @@ export async function createOrganization(input: OrganizationInput, initialPool: 
   if (await nameTaken(name, null)) return null;
   const id = randomUUID();
   await transaction(async () => {
-        await execute("INSERT INTO organizations (id, name, credit_pool, seat_limit, created_at) VALUES (?, ?, 0, ?, ?)", [id, name, input.seatLimit, now]);
-        await replaceDomains(id, input.domains);
-        if (initialPool > 0) await changePool(id, initialPool, "ilk yükleme", actor, null, now);
-      });
+    await execute("INSERT INTO organizations (id, name, credit_pool, seat_limit, created_at) VALUES (?, ?, 0, ?, ?)", [id, name, input.seatLimit, now]);
+    await replaceDomains(id, input.domains);
+    if (initialPool > 0) await changePool(id, initialPool, "ilk yükleme", actor, null, now);
+  });
   return getOrganization(id);
 }
 
@@ -103,18 +120,18 @@ export async function updateOrganization(id: string, input: OrganizationInput): 
   const name = input.name.trim();
   if (await nameTaken(name, id)) return false;
   await transaction(async () => {
-        await execute("UPDATE organizations SET name = ?, seat_limit = ? WHERE id = ?", [name, input.seatLimit, id]);
-        await replaceDomains(id, input.domains);
-      });
+    await execute("UPDATE organizations SET name = ?, seat_limit = ? WHERE id = ?", [name, input.seatLimit, id]);
+    await replaceDomains(id, input.domains);
+  });
   return true;
 }
 
 /** Askıya alınan kurumun kullanıcıları giremez; açık oturumları da kapanır. */
 export async function setOrganizationSuspended(id: string, suspended: boolean, now: number): Promise<void> {
   await transaction(async () => {
-        await execute("UPDATE organizations SET suspended_at = ? WHERE id = ?", [suspended ? now : null, id]);
-        if (suspended) await execute("DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE org_id = ?)", [id]);
-      });
+    await execute("UPDATE organizations SET suspended_at = ? WHERE id = ?", [suspended ? now : null, id]);
+    if (suspended) await execute("DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE org_id = ?)", [id]);
+  });
 }
 
 /* ── Kredi havuzu ─────────────────────────────────────────────────────── */
@@ -123,7 +140,15 @@ export async function setOrganizationSuspended(id: string, suspended: boolean, n
 export async function changePool(orgId: string, delta: number, reason: string, actor: string, userId: string | null, now: number): Promise<boolean> {
   const changed = await execute("UPDATE organizations SET credit_pool = credit_pool + ? WHERE id = ? AND credit_pool + ? >= 0", [delta, orgId, delta]);
   if (changed === 0) return false;
-  await execute("INSERT INTO organization_ledger (id, org_id, delta, reason, actor, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [randomUUID(), orgId, delta, reason, actor, userId, now]);
+  await execute("INSERT INTO organization_ledger (id, org_id, delta, reason, actor, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)", [
+    randomUUID(),
+    orgId,
+    delta,
+    reason,
+    actor,
+    userId,
+    now,
+  ]);
   return true;
 }
 
@@ -142,16 +167,16 @@ export type TransferResult = "ok" | "pool" | "balance" | "invalid";
 export async function transferCredits(orgId: string, userId: string, amount: number, actor: string, now: number): Promise<TransferResult> {
   if (!Number.isInteger(amount) || amount === 0) return "invalid";
   return await transaction(async () => {
-      const pool = (await queryOne<{ credit_pool: number }>("SELECT credit_pool FROM organizations WHERE id = ?", [orgId]))?.credit_pool;
-      const balance = (await queryOne<{ credits: number }>("SELECT credits FROM users WHERE id = ? AND org_id = ?", [userId, orgId]))?.credits;
-      if (pool === undefined || balance === undefined) return "invalid";
-      if (pool - amount < 0) return "pool";
-      if (balance + amount < 0) return "balance";
-      await execute("UPDATE users SET credits = credits + ? WHERE id = ?", [amount, userId]);
-      await recordUserLedger(userId, amount, amount > 0 ? "kurum havuzundan" : "kurum havuzuna iade", null, now);
-      await changePool(orgId, -amount, amount > 0 ? "kullanıcıya dağıtım" : "kullanıcıdan iade", actor, userId, now);
-      return "ok";
-    });
+    const pool = (await queryOne<{ credit_pool: number }>("SELECT credit_pool FROM organizations WHERE id = ?", [orgId]))?.credit_pool;
+    const balance = (await queryOne<{ credits: number }>("SELECT credits FROM users WHERE id = ? AND org_id = ?", [userId, orgId]))?.credits;
+    if (pool === undefined || balance === undefined) return "invalid";
+    if (pool - amount < 0) return "pool";
+    if (balance + amount < 0) return "balance";
+    await execute("UPDATE users SET credits = credits + ? WHERE id = ?", [amount, userId]);
+    await recordUserLedger(userId, amount, amount > 0 ? "kurum havuzundan" : "kurum havuzuna iade", null, now);
+    await changePool(orgId, -amount, amount > 0 ? "kullanıcıya dağıtım" : "kullanıcıdan iade", actor, userId, now);
+    return "ok";
+  });
 }
 
 export interface PoolEntry {
@@ -164,22 +189,24 @@ export interface PoolEntry {
 }
 
 export async function listPoolLedger(orgId: string, limit: number): Promise<PoolEntry[]> {
-  return (await queryAll<{ delta: number; reason: string; actor: string; user_email: string | null; created_at: number }>(
+  return (
+    await queryAll<{ delta: number; reason: string; actor: string; user_email: string | null; created_at: number }>(
       `SELECT l.delta, l.reason, l.actor, u.email AS user_email, l.created_at
      FROM organization_ledger l LEFT JOIN users u ON u.id = l.user_id
      WHERE l.org_id = ? ORDER BY l.created_at DESC, l.seq DESC LIMIT ?`,
       [orgId, limit],
-    )).map((row) => ({ delta: row.delta, reason: row.reason, actor: row.actor, userEmail: row.user_email, createdAt: row.created_at }));
+    )
+  ).map((row) => ({ delta: row.delta, reason: row.reason, actor: row.actor, userEmail: row.user_email, createdAt: row.created_at }));
 }
 
 /** Kurum kullanıcılarının belirtilen andan beri harcadığı kredi (artı sayı). */
 export async function creditsSpentSince(orgId: string | null, since: number): Promise<number> {
   const scope = orgId === null ? "" : "AND u.org_id = ?";
   const row = await queryOne<{ spent: number }>(
-      `SELECT COALESCE(-SUM(l.delta), 0) AS spent
+    `SELECT COALESCE(-SUM(l.delta), 0) AS spent
      FROM credit_ledger l JOIN users u ON u.id = l.user_id
      WHERE l.delta < 0 AND l.reason NOT LIKE 'kurum havuzu%' AND l.created_at >= ? ${scope}`,
-      orgId === null ? [since] : [since, orgId],
-    );
+    orgId === null ? [since] : [since, orgId],
+  );
   return row?.spent ?? 0;
 }

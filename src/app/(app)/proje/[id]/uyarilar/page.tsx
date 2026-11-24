@@ -41,7 +41,7 @@ export default async function AlertsPage({ params, searchParams }: PageProps<"/p
   const bucket = RANGE_PRESETS[rangeKey].bucket;
 
   const anomalies = (await findAnomalies(project.id, range, bucket, sensitivity)).sort((a, b) => b.bucketStart - a.bucketStart);
-  const explained = (await Promise.all(anomalies.slice(0, MAX_EXPLAINED).map(async (anomaly) => explainAnomaly(project, anomaly, bucket))));
+  const explained = await Promise.all(anomalies.slice(0, MAX_EXPLAINED).map(async (anomaly) => explainAnomaly(project, anomaly, bucket)));
   const critical = anomalies.filter((anomaly) => anomaly.level === "critical").length;
 
   return (
@@ -95,7 +95,8 @@ export default async function AlertsPage({ params, searchParams }: PageProps<"/p
 
       {explained.length === 0 ? (
         <EmptyState title="Olağan dışı bir hareket yok">
-          Bu dönemde hacim ve olumsuz oranı, önceki haftaların düzeyine yakın seyretti. Bir sıçrama olduğunda burada nedenini; hangi kaynaktan, hangi başlıkla ve hangi konuda büyüdüğünü göreceksiniz.
+          Bu dönemde hacim ve olumsuz oranı, önceki haftaların düzeyine yakın seyretti. Bir sıçrama olduğunda burada nedenini; hangi kaynaktan, hangi başlıkla ve hangi konuda
+          büyüdüğünü göreceksiniz.
         </EmptyState>
       ) : (
         <div className="flex max-w-[60rem] flex-col gap-3">
@@ -103,9 +104,7 @@ export default async function AlertsPage({ params, searchParams }: PageProps<"/p
             <AnomalyCard key={anomaly.bucketStart} anomaly={anomaly} mentionsHref={projectHref(project.id, "bahsetmeler")} />
           ))}
           {anomalies.length > explained.length ? (
-            <p className="text-[0.875rem] text-ink-muted">
-              En yeni {MAX_EXPLAINED} hareket gösteriliyor; daha eskileri için dönemi daraltın.
-            </p>
+            <p className="text-[0.875rem] text-ink-muted">En yeni {MAX_EXPLAINED} hareket gösteriliyor; daha eskileri için dönemi daraltın.</p>
           ) : null}
         </div>
       )}

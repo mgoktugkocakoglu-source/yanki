@@ -1,15 +1,6 @@
 import { composeQuery, decomposeQuery, describeQuery, plainFromSearch, queryToTopicTerms, topicTermsToQuery } from "@/lib/query";
 import { describe, expect, it } from "vitest";
-import {
-  buildCollectionPlan,
-  groupProbes,
-  probeConditions,
-  EMPTY_FIELDS,
-  matchQuery,
-  parseQuery,
-  tryParseQuery,
-  type MatchableFields,
-} from "@/lib/query";
+import { buildCollectionPlan, groupProbes, probeConditions, EMPTY_FIELDS, matchQuery, parseQuery, tryParseQuery, type MatchableFields } from "@/lib/query";
 import { tokenize } from "@/lib/text/normalize";
 
 function matches(query: string, text: string, fields: Partial<MatchableFields> = {}): boolean {
@@ -27,9 +18,7 @@ describe("ayrıştırıcı", () => {
   });
 
   it("Türkçe ve İngilizce işleçleri eşdeğer sayar", () => {
-    expect(parseQuery("kargo VE (gecikme VEYA iade) DEĞİL çekiliş")).toEqual(
-      parseQuery("kargo AND (gecikme OR iade) NOT çekiliş"),
-    );
+    expect(parseQuery("kargo VE (gecikme VEYA iade) DEĞİL çekiliş")).toEqual(parseQuery("kargo AND (gecikme OR iade) NOT çekiliş"));
   });
 
   it("küçük harfle yazılan 've' bir işleç değil, aranan kelimedir", () => {

@@ -6,7 +6,8 @@ import { bucketSizeMs, enumerateBuckets, previousRange, RANGE_PRESETS, resolveRa
 import { earliestPublishedAt, latestCollectedAt, listMentions, type MentionFilter } from "../repositories/mentions";
 import {
   breakdown,
-  type BreakdownRow,  summarize,
+  type BreakdownRow,
+  summarize,
   timeSeries,
   timeSeriesBySourceType,
   topicBreakdown,
@@ -79,9 +80,7 @@ const text = (value: string): BriefingPart => ({ kind: "text", text: value });
 
 function fillSeries(points: SeriesPoint[], range: TimeRange, bucket: Bucket): SeriesPoint[] {
   const byStart = new Map(points.map((point) => [point.bucketStart, point]));
-  return enumerateBuckets(range, bucket).map(
-    (bucketStart) => byStart.get(bucketStart) ?? { bucketStart, total: 0, positive: 0, negative: 0, neutral: 0 },
-  );
+  return enumerateBuckets(range, bucket).map((bucketStart) => byStart.get(bucketStart) ?? { bucketStart, total: 0, positive: 0, negative: 0, neutral: 0 });
 }
 
 async function buildSourceSeries(filter: MentionFilter, range: TimeRange, bucket: Bucket): Promise<SourceSeries[]> {
@@ -126,14 +125,7 @@ const MIN_TOPIC_VOLUME = 20;
 /** Genel bakışta açıklaması hesaplanan hareket sayısı. */
 const EXPLAINED_ANOMALIES = 2;
 
-function buildBriefing(
-  rangeKey: RangeKey,
-  range: TimeRange,
-  summary: Summary,
-  previous: Summary | null,
-  anomalies: ExplainedAnomaly[],
-  topics: TopicScore[],
-): BriefingSentence[] {
+function buildBriefing(rangeKey: RangeKey, range: TimeRange, summary: Summary, previous: Summary | null, anomalies: ExplainedAnomaly[], topics: TopicScore[]): BriefingSentence[] {
   const period = RANGE_PRESETS[rangeKey].label.toLocaleLowerCase("tr-TR");
   if (summary.total === 0) {
     return [[text(`${RANGE_PRESETS[rangeKey].label} içinde bu projeyle eşleşen içerik bulunmuyor.`)]];
@@ -207,9 +199,7 @@ function buildBriefing(
       { kind: "reading", style: "label", text: busiest.name, query: `konu:"${busiest.name}"`, range },
       text(` (${formatNumber(busiest.total)})`),
     ];
-    const sorest = ranked
-      .filter((topic) => topic.total >= MIN_TOPIC_VOLUME && topic.id !== busiest.id)
-      .sort((a, b) => share(b.negative, b.total) - share(a.negative, a.total))[0];
+    const sorest = ranked.filter((topic) => topic.total >= MIN_TOPIC_VOLUME && topic.id !== busiest.id).sort((a, b) => share(b.negative, b.total) - share(a.negative, a.total))[0];
     if (sorest && share(sorest.negative, sorest.total) > share(busiest.negative, busiest.total)) {
       sentence.push(
         text("; olumsuz oranı en yüksek konu "),
@@ -236,9 +226,11 @@ export async function getOverview(project: Project, rangeKey: RangeKey, now: num
   const isPreviousCovered = coverageStart !== null && coverageStart < previous.from + bucketSizeMs(bucket);
   const previousSummary = isPreviousCovered ? await summarize({ projectId: project.id, range: previous }) : null;
   const anomalies = await findAnomalies(project.id, range, bucket);
-  const explained = (await Promise.all(rankAnomalies(anomalies)
+  const explained = await Promise.all(
+    rankAnomalies(anomalies)
       .slice(0, EXPLAINED_ANOMALIES)
-      .map(async (anomaly) => explainAnomaly(project, anomaly, bucket))));
+      .map(async (anomaly) => explainAnomaly(project, anomaly, bucket)),
+  );
   const topics = await scoreTopics(project.id, filter);
 
   return {

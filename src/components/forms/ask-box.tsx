@@ -54,9 +54,7 @@ export function AskBox({ projectId, rangeKey, evidenceBase }: { projectId: strin
             </p>
           </div>
         ) : null}
-        {!pending && state.status === "idle" ? (
-          <p className="text-[0.8125rem] text-ink-muted">Örnek sorular: {EXAMPLES.slice(1).join(" · ")}</p>
-        ) : null}
+        {!pending && state.status === "idle" ? <p className="text-[0.8125rem] text-ink-muted">Örnek sorular: {EXAMPLES.slice(1).join(" · ")}</p> : null}
       </div>
     </div>
   );

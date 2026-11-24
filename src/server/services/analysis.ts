@@ -95,17 +95,17 @@ export async function getComparison(workspaceId: string, projectIds: string[] | 
     : candidates;
 
   const starts = enumerateBuckets(range, bucket);
-  const rows = (await Promise.all(selected.map(async (project) => {
+  const rows = await Promise.all(
+    selected.map(async (project) => {
       const filter: MentionFilter = { projectId: project.id, range };
       const byStart = new Map((await timeSeries(filter, bucket)).map((point) => [point.bucketStart, point]));
       return {
         project,
         summary: await summarize(filter),
-        series: starts.map(
-          (bucketStart) => byStart.get(bucketStart) ?? { bucketStart, total: 0, positive: 0, negative: 0, neutral: 0 },
-        ),
+        series: starts.map((bucketStart) => byStart.get(bucketStart) ?? { bucketStart, total: 0, positive: 0, negative: 0, neutral: 0 }),
       };
-    })));
+    }),
+  );
 
   const total = rows.reduce((sum, row) => sum + row.summary.total, 0);
   return {

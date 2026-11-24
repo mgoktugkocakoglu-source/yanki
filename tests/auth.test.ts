@@ -77,13 +77,45 @@ const fresh = async (user: User): Promise<User> => (await getUser(user.id))!;
 
 beforeAll(async () => {
   await ensureSeeded(NOW);
-  sysadmin = (await createUser({ email: " Sistem@Yanki.example ", name: "Sistem", role: "sysadmin", orgId: null, passwordHash: hashPassword("cok-gizli-parola"), credits: 0 }, NOW))!;
+  sysadmin = (await createUser(
+    { email: " Sistem@Yanki.example ", name: "Sistem", role: "sysadmin", orgId: null, passwordHash: hashPassword("cok-gizli-parola"), credits: 0 },
+    NOW,
+  ))!;
   kurumA = (await createOrganization({ name: "A Kurumu", seatLimit: 4, domains: ["a.gov.example"] }, 100, SYSTEM, NOW))!;
   kurumB = (await createOrganization({ name: "B Kurumu", seatLimit: null, domains: [] }, 0, SYSTEM, NOW))!;
-  adminA = (await createUser({ email: "yonetici@a.gov.example", name: "A Yönetici", role: "admin", orgId: kurumA.id, passwordHash: hashPassword("yonetici-parola"), credits: 0, permissions: ["users.invite"], grantedBy: SYSTEM }, NOW))!;
-  adminB = (await createUser({ email: "yonetici@b.example", name: "B Yönetici", role: "admin", orgId: kurumB.id, passwordHash: "x", credits: 0, permissions: ["users.invite", "users.manage", "credits.assign", "projects.viewAll", "audit.view"] }, NOW))!;
-  zeynep = (await createUser({ email: "zeynep@a.gov.example", name: "Zeynep", role: "analyst", orgId: kurumA.id, passwordHash: hashPassword("zeynep-parolasi"), credits: 12 }, NOW))!;
-  mehmet = (await createUser({ email: "mehmet@a.gov.example", name: "Mehmet", role: "analyst", orgId: kurumA.id, passwordHash: hashPassword("mehmet-parolasi"), credits: 1 }, NOW))!;
+  adminA = (await createUser(
+    {
+      email: "yonetici@a.gov.example",
+      name: "A Yönetici",
+      role: "admin",
+      orgId: kurumA.id,
+      passwordHash: hashPassword("yonetici-parola"),
+      credits: 0,
+      permissions: ["users.invite"],
+      grantedBy: SYSTEM,
+    },
+    NOW,
+  ))!;
+  adminB = (await createUser(
+    {
+      email: "yonetici@b.example",
+      name: "B Yönetici",
+      role: "admin",
+      orgId: kurumB.id,
+      passwordHash: "x",
+      credits: 0,
+      permissions: ["users.invite", "users.manage", "credits.assign", "projects.viewAll", "audit.view"],
+    },
+    NOW,
+  ))!;
+  zeynep = (await createUser(
+    { email: "zeynep@a.gov.example", name: "Zeynep", role: "analyst", orgId: kurumA.id, passwordHash: hashPassword("zeynep-parolasi"), credits: 12 },
+    NOW,
+  ))!;
+  mehmet = (await createUser(
+    { email: "mehmet@a.gov.example", name: "Mehmet", role: "analyst", orgId: kurumA.id, passwordHash: hashPassword("mehmet-parolasi"), credits: 1 },
+    NOW,
+  ))!;
 });
 
 describe("parola", () => {
@@ -308,7 +340,10 @@ describe("davet", () => {
   });
 
   it("süresi dolan davet kabul edilemez ve koltuk tutmaz", async () => {
-    const result = await createInvitation({ orgId: kurumB.id, email: "gec@b.example", name: "Geç Kalan", role: "analyst", credits: 0, permissions: [], invitedBy: adminB.email }, NOW);
+    const result = await createInvitation(
+      { orgId: kurumB.id, email: "gec@b.example", name: "Geç Kalan", role: "analyst", credits: 0, permissions: [], invitedBy: adminB.email },
+      NOW,
+    );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(await seatsInUse(kurumB.id, NOW + 1)).toBe(2);
@@ -343,7 +378,10 @@ describe("konu görünürlüğü", () => {
 
     const all = await listProjects(workspace.id);
     const owners = await listProjectOwners();
-    const names = (viewer: User | null) => visibleProjects(viewer, all, owners).map((project) => project.name).sort();
+    const names = (viewer: User | null) =>
+      visibleProjects(viewer, all, owners)
+        .map((project) => project.name)
+        .sort();
     expect(names(zeynep)).toEqual(["Brezilya seçimleri", "Ortak konu"]);
     expect(names(mehmet)).toEqual(["COP31", "Ortak konu"]);
     // Yetkisi olmayan kurum yöneticisi kullanıcı gibi görür.

@@ -59,7 +59,16 @@ export function SetupForm({ minPasswordLength }: { minPasswordLength: number }) 
         <label htmlFor="kurulum-parola" className={LABEL}>
           Parola
         </label>
-        <input id="kurulum-parola" name="password" type="password" required minLength={minPasswordLength} autoComplete="new-password" aria-describedby="kurulum-parola-notu" className={INPUT} />
+        <input
+          id="kurulum-parola"
+          name="password"
+          type="password"
+          required
+          minLength={minPasswordLength}
+          autoComplete="new-password"
+          aria-describedby="kurulum-parola-notu"
+          className={INPUT}
+        />
         <p id="kurulum-parola-notu" className="mt-1 text-[0.8125rem] text-ink-muted">
           En az {minPasswordLength} karakter.
         </p>

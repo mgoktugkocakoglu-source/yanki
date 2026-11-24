@@ -113,7 +113,12 @@ export async function quickSearchAction(_previous: FormState, formData: FormData
 
   // Platform seçimi isteğe bağlıdır; form göndermediyse kullanılabilir tüm kaynaklar taranır.
   const usable = defaultConnectorIds();
-  const connectorIds = formData.has("platformsShown") ? formData.getAll("connectorIds").map(String).filter((id) => usable.includes(id)) : usable;
+  const connectorIds = formData.has("platformsShown")
+    ? formData
+        .getAll("connectorIds")
+        .map(String)
+        .filter((id) => usable.includes(id))
+    : usable;
   if (connectorIds.length === 0) return failure("En az bir platform seçin.", { connectorIds: "En az bir platform seçin." });
 
   let project = (await loadVisibleProjects(viewer, await listProjects(workspace.id))).find((entry) => entry.query === fullQuery) ?? null;

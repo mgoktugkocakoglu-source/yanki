@@ -155,7 +155,11 @@ async function crawlFeed(feed: NewsFeed, rules: RobotsRules, now: number): Promi
     const entries = feed.kind === "sitemap" ? parseNewsSitemap(response.body) : parseFeed(response.body);
     if (entries.length === 0) throw new SourceRequestError("akışta okunabilir haber yok", null);
     const inserted = await insertArticles(toArticles(feed, entries, now), now);
-    await recordFeedResult(feed, { status: "ok", error: null, itemCount: entries.length, etag: response.etag, lastModified: response.lastModified, nextDueAt: now + interval }, now);
+    await recordFeedResult(
+      feed,
+      { status: "ok", error: null, itemCount: entries.length, etag: response.etag, lastModified: response.lastModified, nextDueAt: now + interval },
+      now,
+    );
     return { status: "ok", inserted };
   } catch (error) {
     const reason = error instanceof Error ? error.message : "bilinmeyen hata";
@@ -180,7 +184,11 @@ async function crawlHost(feeds: NewsFeed[], summary: CrawlSummary, now: number):
   const robots = await robotsFor(origin, now);
   if (!robots.ok) {
     for (const feed of feeds) {
-      await recordFeedResult(feed, { status: "error", error: robots.reason.slice(0, 200), itemCount: 0, etag: feed.etag, lastModified: feed.lastModified, nextDueAt: now + backoff(feed.failures + 1) }, now);
+      await recordFeedResult(
+        feed,
+        { status: "error", error: robots.reason.slice(0, 200), itemCount: 0, etag: feed.etag, lastModified: feed.lastModified, nextDueAt: now + backoff(feed.failures + 1) },
+        now,
+      );
       summary.errors += 1;
     }
     return;

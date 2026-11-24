@@ -42,6 +42,10 @@ const PHRASE_WORDS = 8;
 
 /** Bir başlığı öbek aramasına çevirir: `"ilk sekiz kelime"`. */
 export function phraseQuery(title: string): string {
-  const words = title.replace(/["“”„]/g, " ").split(/\s+/).filter(Boolean).slice(0, PHRASE_WORDS);
+  const words = title
+    .replace(/["“”„]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, PHRASE_WORDS);
   return `"${words.join(" ")}"`;
 }

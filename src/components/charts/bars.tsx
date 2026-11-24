@@ -35,7 +35,11 @@ export function ToneBar({ values, mentionsHref }: ToneBarProps) {
 
   return (
     <div>
-      <div className="flex h-7 gap-0.5" role="img" aria-label={TONE_SEGMENTS.map((segment) => `${segment.label} ${formatPercent(share(values[segment.key], values.total))}`).join(", ")}>
+      <div
+        className="flex h-7 gap-0.5"
+        role="img"
+        aria-label={TONE_SEGMENTS.map((segment) => `${segment.label} ${formatPercent(share(values[segment.key], values.total))}`).join(", ")}
+      >
         {TONE_SEGMENTS.map((segment) => {
           const value = values[segment.key];
           if (value === 0) return null;
@@ -99,11 +103,7 @@ function RowBody({ row, max, splitByTone }: { row: RankedRow; max: number; split
       <span className="flex items-center gap-2">
         <span className="flex h-3 gap-0.5 overflow-hidden rounded-r" style={{ width }}>
           {splitByTone ? (
-            TONE_SEGMENTS.map((segment) =>
-              (row[segment.key] ?? 0) > 0 ? (
-                <span key={segment.key} style={{ flex: row[segment.key], background: segment.color }} />
-              ) : null,
-            )
+            TONE_SEGMENTS.map((segment) => ((row[segment.key] ?? 0) > 0 ? <span key={segment.key} style={{ flex: row[segment.key], background: segment.color }} /> : null))
           ) : (
             <span className="flex-1 bg-brand" />
           )}

@@ -42,9 +42,7 @@ interface ConnectorOutcome {
 async function runConnector(connector: Connector, request: CollectRequest, prepared: PreparedProject, now: number): Promise<ConnectorOutcome> {
   try {
     const result = await connector.collect(request);
-    const matched = result.items
-      .map((item) => buildMention(item, prepared, { now, isDemo: false }))
-      .filter((mention): mention is NewMention => mention !== null);
+    const matched = result.items.map((item) => buildMention(item, prepared, { now, isDemo: false })).filter((mention): mention is NewMention => mention !== null);
     return {
       status: matched.length > 0 ? "ok" : "empty",
       fetched: result.items.length,
@@ -79,32 +77,30 @@ async function buildRequest(connector: Connector, plan: CollectionPlan, lastRun:
     groups: plan.groups,
     language: plan.language,
     since: resumeFrom ?? now - lookback,
-    maxItems: limit === null ? null : Math.max(0, limit - await fetchedSince(connector.descriptor.id, bucketStart(now, "day"))),
+    maxItems: limit === null ? null : Math.max(0, limit - (await fetchedSince(connector.descriptor.id, bucketStart(now, "day")))),
   };
 }
 
 async function saveRun(project: Project, connectorId: string, startedAt: number, outcome: ConnectorOutcome, inserted: number): Promise<CollectionRun> {
   return await recordRun({
-      workspaceId: project.workspaceId,
-      projectId: project.id,
-      connectorId,
-      startedAt,
-      finishedAt: Date.now(),
-      status: outcome.status,
-      fetched: outcome.fetched,
-      matched: outcome.matched.length,
-      inserted,
-      message: outcome.message,
-    });
+    workspaceId: project.workspaceId,
+    projectId: project.id,
+    connectorId,
+    startedAt,
+    finishedAt: Date.now(),
+    status: outcome.status,
+    fetched: outcome.fetched,
+    matched: outcome.matched.length,
+    inserted,
+    message: outcome.message,
+  });
 }
 
 function skipped(message: string): ConnectorOutcome {
   return { status: "skipped", fetched: 0, matched: [], message };
 }
 
-export type CollectOutcome =
-  | { ok: true; runs: CollectionRun[]; inserted: number }
-  | { ok: false; reason: "not-found" | "demo" | "busy" | "no-keywords" };
+export type CollectOutcome = { ok: true; runs: CollectionRun[]; inserted: number } | { ok: false; reason: "not-found" | "demo" | "busy" | "no-keywords" };
 
 /** Projenin tüm açık bağlayıcılarını bir kez çalıştırır. */
 export async function collectProject(projectId: string): Promise<CollectOutcome> {

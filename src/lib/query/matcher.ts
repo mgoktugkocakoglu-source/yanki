@@ -77,12 +77,7 @@ function gapBetween(a: TokenRange, b: TokenRange): number {
   return -1;
 }
 
-export function findNearRanges(
-  tokens: readonly string[],
-  left: readonly TextNode[],
-  right: readonly TextNode[],
-  distance: number,
-): TokenRange[] {
+export function findNearRanges(tokens: readonly string[], left: readonly TextNode[], right: readonly TextNode[], distance: number): TokenRange[] {
   const leftRanges = left.flatMap((node) => findTextRanges(tokens, node.tokens, node.mode));
   if (leftRanges.length === 0) return [];
   const rightRanges = right.flatMap((node) => findTextRanges(tokens, node.tokens, node.mode));
@@ -158,11 +153,7 @@ function matchField(node: FieldNode, fields: MatchableFields): boolean {
  * Sorguyu tek bir içerik üzerinde değerlendirir.
  * `tokens`, `tokenize()` ile üretilmiş katlanmış kelimelerdir.
  */
-export function matchQuery(
-  node: QueryNode,
-  tokens: readonly string[],
-  fields: MatchableFields = EMPTY_FIELDS,
-): MatchResult {
+export function matchQuery(node: QueryNode, tokens: readonly string[], fields: MatchableFields = EMPTY_FIELDS): MatchResult {
   switch (node.kind) {
     case "text":
       return matchText(node, tokens);

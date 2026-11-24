@@ -22,13 +22,13 @@ export async function scanClaimsAction(_previous: FormState, formData: FormData)
 
   const matched = outcome.run.claims.filter((claim) => claim.checks.length > 0).length;
   await recordAudit({
-        actor: viewer?.email,
-        workspaceId: project.workspaceId,
-        action: "yapayzeka.iddia",
-        objectType: "proje",
-        objectId: project.id,
-        detail: `${outcome.run.mentionsSent} içerik ${outcome.run.model} modeline gönderildi; ${outcome.run.claims.length} iddia, ${matched} tanesinde yayımlanmış doğrulama`,
-      });
+    actor: viewer?.email,
+    workspaceId: project.workspaceId,
+    action: "yapayzeka.iddia",
+    objectType: "proje",
+    objectId: project.id,
+    detail: `${outcome.run.mentionsSent} içerik ${outcome.run.model} modeline gönderildi; ${outcome.run.claims.length} iddia, ${matched} tanesinde yayımlanmış doğrulama`,
+  });
   refresh();
   return { ok: true, message: `${outcome.run.claims.length} iddia bulundu.`, errors: {} };
 }

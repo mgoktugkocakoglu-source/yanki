@@ -126,7 +126,16 @@ function OrganizationInputs({ idPrefix, values }: { idPrefix: string; values?: O
         <label htmlFor={`${idPrefix}-koltuk`} className={LABEL}>
           Koltuk sınırı
         </label>
-        <input id={`${idPrefix}-koltuk`} name="seatLimit" type="number" min={1} max={100000} defaultValue={values?.seatLimit ?? ""} aria-describedby={`${idPrefix}-koltuk-notu`} className={INPUT} />
+        <input
+          id={`${idPrefix}-koltuk`}
+          name="seatLimit"
+          type="number"
+          min={1}
+          max={100000}
+          defaultValue={values?.seatLimit ?? ""}
+          aria-describedby={`${idPrefix}-koltuk-notu`}
+          className={INPUT}
+        />
         <p id={`${idPrefix}-koltuk-notu`} className={NOTE}>
           Etkin hesap ve bekleyen davet toplamı. Boş bırakılırsa sınırsız.
         </p>
@@ -135,7 +144,16 @@ function OrganizationInputs({ idPrefix, values }: { idPrefix: string; values?: O
         <label htmlFor={`${idPrefix}-alan`} className={LABEL}>
           İzinli e-posta alan adları
         </label>
-        <input id={`${idPrefix}-alan`} name="domains" type="text" defaultValue={values?.domains.join(", ")} placeholder="kurum.gov.tr" autoComplete="off" aria-describedby={`${idPrefix}-alan-notu`} className={INPUT} />
+        <input
+          id={`${idPrefix}-alan`}
+          name="domains"
+          type="text"
+          defaultValue={values?.domains.join(", ")}
+          placeholder="kurum.gov.tr"
+          autoComplete="off"
+          aria-describedby={`${idPrefix}-alan-notu`}
+          className={INPUT}
+        />
         <p id={`${idPrefix}-alan-notu`} className={NOTE}>
           Virgülle ayırın. Boş bırakılırsa her adres yetkilendirilebilir.
         </p>
@@ -264,7 +282,17 @@ export function InviteForm({ orgId, role, allowCredits, domains }: InviteFormPro
             <label htmlFor={`${id}-kredi`} className={LABEL}>
               Başlangıç kredisi
             </label>
-            <input id={`${id}-kredi`} name="credits" type="number" min={0} max={1000000} defaultValue={role === "admin" ? 0 : 100} required aria-describedby={`${id}-kredi-notu`} className={INPUT} />
+            <input
+              id={`${id}-kredi`}
+              name="credits"
+              type="number"
+              min={0}
+              max={1000000}
+              defaultValue={role === "admin" ? 0 : 100}
+              required
+              aria-describedby={`${id}-kredi-notu`}
+              className={INPUT}
+            />
             <p id={`${id}-kredi-notu`} className={NOTE}>
               Kurum havuzundan ayrılır.
             </p>
@@ -343,7 +371,16 @@ function NewPasswordInputs({ idPrefix, minLength }: { idPrefix: string; minLengt
         <label htmlFor={`${idPrefix}-parola`} className={LABEL}>
           Yeni parola
         </label>
-        <input id={`${idPrefix}-parola`} name="password" type="password" required minLength={minLength} autoComplete="new-password" aria-describedby={`${idPrefix}-notu`} className={INPUT} />
+        <input
+          id={`${idPrefix}-parola`}
+          name="password"
+          type="password"
+          required
+          minLength={minLength}
+          autoComplete="new-password"
+          aria-describedby={`${idPrefix}-notu`}
+          className={INPUT}
+        />
         <p id={`${idPrefix}-notu`} className={NOTE}>
           En az {minLength} karakter.
         </p>

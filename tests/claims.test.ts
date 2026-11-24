@@ -46,7 +46,9 @@ beforeAll(async () => {
 describe("eşleştirme istemi", () => {
   it("iddiaları ve adayları numarasıyla listeler", () => {
     const prompt = buildMatchPrompt({
-      claims: [{ number: 2, text: "Su kesintisi üç gün sürdü.", candidates: [{ number: 1, claimText: "Kesinti bir hafta sürdü", title: "Başlık", publisher: "Teyit", rating: "Yanlış" }] }],
+      claims: [
+        { number: 2, text: "Su kesintisi üç gün sürdü.", candidates: [{ number: 1, claimText: "Kesinti bir hafta sürdü", title: "Başlık", publisher: "Teyit", rating: "Yanlış" }] },
+      ],
     });
     expect(prompt).toContain("İddia [2]: Su kesintisi üç gün sürdü.");
     expect(prompt).toContain("Aday [1] (Teyit; derecelendirme: Yanlış)");
@@ -74,7 +76,11 @@ describe("iddia taraması", () => {
     const queries: string[] = [];
     const outcome = await scanClaims(project, "30g", NOW, provider, async (query) => {
       queries.push(query);
-      return query.startsWith("su") ? [check("https://ornek.example/a", "Yanlış"), check("https://ornek.example/b", "Doğru")] : query === "tek" ? [] : [check("https://ornek.example/a", "Yanlış")];
+      return query.startsWith("su")
+        ? [check("https://ornek.example/a", "Yanlış"), check("https://ornek.example/b", "Doğru")]
+        : query === "tek"
+          ? []
+          : [check("https://ornek.example/a", "Yanlış")];
     });
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;

@@ -107,15 +107,10 @@ export default async function MentionsPage({ params, searchParams }: PageProps<"
   const highlightQueries: QueryNode[] = [...(projectQuery.ok ? [projectQuery.ast] : []), ...(query.queryAst ? [query.queryAst] : [])];
   const queryDescription = query.queryText ? describeQuery(query.queryText) : null;
   const activeFilterLabels = queryDescription
-    ? [
-        ...queryDescription.required.map((group) => group.join(" ya da ")),
-        ...queryDescription.excluded.map((term) => `hariç: ${term}`),
-        ...queryDescription.filters,
-      ]
+    ? [...queryDescription.required.map((group) => group.join(" ya da ")), ...queryDescription.excluded.map((term) => `hariç: ${term}`), ...queryDescription.filters]
     : [];
   const lowerQuery = query.queryText.toLocaleLowerCase("tr-TR");
-  const facetHref = (field: string, value: string) =>
-    hrefWith(base, rawParams, { [PARAMS.query]: toggleField(query.queryText, field, value) || null, [PARAMS.page]: null });
+  const facetHref = (field: string, value: string) => hrefWith(base, rawParams, { [PARAMS.query]: toggleField(query.queryText, field, value) || null, [PARAMS.page]: null });
 
   const exportHref = hrefWith(`/api/proje/${project.id}/disa-aktar`, rawParams, { [PARAMS.page]: null, [PARAMS.sort]: null });
 
@@ -225,38 +220,33 @@ export default async function MentionsPage({ params, searchParams }: PageProps<"
 
       <div className={selected ? "mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_26rem]" : "mt-4"}>
         <div className="flex min-w-0 flex-col gap-3">
-        {mentions.length === 0 ? (
-          <EmptyState
-            title="Bu süzgeçle eşleşen içerik yok"
-            action={
-              <Link href={base} className="font-semibold text-brand-strong hover:underline">
-                Süzgeçleri temizle
-              </Link>
-            }
-          >
-            Daha az kelimeyle aramayı ya da dönemi genişletmeyi deneyin. Türkçe ekler kendiliğinden yakalanır.
-          </EmptyState>
-        ) : (
-          mentions.map((mention) => (
-            <MentionCard
-              key={mention.id}
-              mention={mention}
-              queries={highlightQueries}
-              topicNames={topicNames}
-              now={now}
-              detailHref={hrefWith(base, rawParams, { [SELECTED_PARAM]: mention.id })}
-              selected={mention.id === selected?.id}
-            />
-          ))
-        )}
+          {mentions.length === 0 ? (
+            <EmptyState
+              title="Bu süzgeçle eşleşen içerik yok"
+              action={
+                <Link href={base} className="font-semibold text-brand-strong hover:underline">
+                  Süzgeçleri temizle
+                </Link>
+              }
+            >
+              Daha az kelimeyle aramayı ya da dönemi genişletmeyi deneyin. Türkçe ekler kendiliğinden yakalanır.
+            </EmptyState>
+          ) : (
+            mentions.map((mention) => (
+              <MentionCard
+                key={mention.id}
+                mention={mention}
+                queries={highlightQueries}
+                topicNames={topicNames}
+                now={now}
+                detailHref={hrefWith(base, rawParams, { [SELECTED_PARAM]: mention.id })}
+                selected={mention.id === selected?.id}
+              />
+            ))
+          )}
         </div>
         {selected ? (
-          <MentionDetail
-            mention={selected}
-            queries={highlightQueries}
-            topicNames={topicNames}
-            closeHref={hrefWith(base, rawParams, { [SELECTED_PARAM]: null })}
-          />
+          <MentionDetail mention={selected} queries={highlightQueries} topicNames={topicNames} closeHref={hrefWith(base, rawParams, { [SELECTED_PARAM]: null })} />
         ) : null}
       </div>
 

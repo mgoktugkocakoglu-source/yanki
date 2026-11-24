@@ -127,8 +127,7 @@ export const blueskyConnector: Connector = {
     sourceType: "social",
     summary: "Herkese açık gönderilerde anahtar kelime araması; beğeni, yanıt ve yeniden paylaşım sayılarıyla.",
     access: "open",
-    terms:
-      "Herkese açık AT Protokolü uç noktası. Koşullarda otomatik erişimi yasaklayan bir madde görülmedi; gönderiler ve kullanıcı adları kişisel veridir (KVKK).",
+    terms: "Herkese açık AT Protokolü uç noktası. Koşullarda otomatik erişimi yasaklayan bir madde görülmedi; gönderiler ve kullanıcı adları kişisel veridir (KVKK).",
     capabilities: {
       keywordSearch: true,
       history: "Arama başına en yeni 100 gönderi",

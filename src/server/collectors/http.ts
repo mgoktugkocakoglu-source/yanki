@@ -55,9 +55,7 @@ export async function fetchText(url: string, accept = "*/*", extraHeaders: Recor
   return body;
 }
 
-export type ConditionalFetch =
-  | { status: "unchanged" }
-  | { status: "ok"; body: string; etag: string | null; lastModified: string | null };
+export type ConditionalFetch = { status: "unchanged" } | { status: "ok"; body: string; etag: string | null; lastModified: string | null };
 
 /**
  * Koşullu GET: önceki yanıtın ETag / Last-Modified değerleri gönderilir;

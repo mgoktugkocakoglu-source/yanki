@@ -101,7 +101,7 @@ describe("dil modeliyle sınıflandırma", () => {
 
     expect(provider.requests.every((request) => request.items.length <= CLASSIFY_BATCH_SIZE)).toBe(true);
     expect(outcome).toMatchObject({ model: "sahte-sinif", classified: 2, toneChanged: third.sentiment === "negative" ? 1 : 2, topicsAdded: 1 });
-    expect(outcome.remaining).toBe(await countMentions(filter) - 2);
+    expect(outcome.remaining).toBe((await countMentions(filter)) - 2);
 
     const reloaded = (await getMention(first.id))!;
     expect(reloaded).toMatchObject({ sentiment: first.sentiment, aiSentiment: flipped, aiModel: "sahte-sinif" });

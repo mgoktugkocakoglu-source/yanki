@@ -63,20 +63,17 @@ export default async function ComparisonPage({ searchParams }: PageProps<"/karsi
   }
 
   const comparison = await getComparison(
-      workspace.id,
-      // Yalnızca kullanıcının görebildiği konular karşılaştırılır.
-      projects.map((project) => project.id),
-      rangeKey,
-      now,
-    );
+    workspace.id,
+    // Yalnızca kullanıcının görebildiği konular karşılaştırılır.
+    projects.map((project) => project.id),
+    rangeKey,
+    now,
+  );
   const ranked = [...comparison.projects].sort((a, b) => b.summary.total - a.summary.total);
 
   return (
     <PageContainer>
-      <PageHeading
-        title="Rakipler"
-        lead={`${workspace.name} · ${RANGE_PRESETS[rangeKey].label} · ${formatNumber(comparison.total)} bahsetme, ${projects.length} proje`}
-      />
+      <PageHeading title="Rakipler" lead={`${workspace.name} · ${RANGE_PRESETS[rangeKey].label} · ${formatNumber(comparison.total)} bahsetme, ${projects.length} proje`} />
 
       <Panel
         title="Ses payı"

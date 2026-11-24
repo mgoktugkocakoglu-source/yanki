@@ -30,11 +30,7 @@ export default async function NewProjectPage() {
         lead={`Proje “${liveWorkspace.name}” içinde açılır ve gerçek kaynakları tarar. Kaydetmeden önce “Önizle” ile aramanın ne getirdiğine bakın.`}
       />
       <Panel className="max-w-[64rem]">
-        <ProjectForm
-          workspaceId={liveWorkspace.id}
-          initial={{ name: "", description: "", query: "", connectorIds: defaultConnectorIds() }}
-          connectors={connectorOptions()}
-        />
+        <ProjectForm workspaceId={liveWorkspace.id} initial={{ name: "", description: "", query: "", connectorIds: defaultConnectorIds() }} connectors={connectorOptions()} />
       </Panel>
     </PageContainer>
   );

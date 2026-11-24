@@ -49,7 +49,7 @@ interface SummaryRow extends ToneCounts {
 export async function summarize(filter: MentionFilter): Promise<Summary> {
   const where = await buildWhere(filter);
   const row = await queryOne<SummaryRow>(
-      `SELECT ${SENTIMENT_COUNTS},
+    `SELECT ${SENTIMENT_COUNTS},
        SUM(m.engagement) AS engagement,
        COUNT(m.engagement) AS engagement_known,
        SUM(m.reach) AS reach,
@@ -59,8 +59,8 @@ export async function summarize(filter: MentionFilter): Promise<Summary> {
        COUNT(DISTINCT m.story_key) AS stories,
        SUM(m.is_sarcastic) AS sarcastic
      FROM mentions m WHERE ${where.sql}`,
-      where.params,
-    );
+    where.params,
+  );
   return {
     total: row?.total ?? 0,
     positive: row?.positive ?? 0,
@@ -90,11 +90,13 @@ export interface SeriesPoint extends ToneCounts {
 /** Yalnızca veri bulunan kovalar döner; boş kovaları çağıran doldurur. */
 export async function timeSeries(filter: MentionFilter, bucket: Bucket): Promise<SeriesPoint[]> {
   const where = await buildWhere(filter);
-  return (await queryAll<ToneCounts & { bucket_start: number }>(
+  return (
+    await queryAll<ToneCounts & { bucket_start: number }>(
       `SELECT ${bucketExpression(bucket)} AS bucket_start, ${SENTIMENT_COUNTS}
      FROM mentions m WHERE ${where.sql} GROUP BY bucket_start ORDER BY bucket_start`,
       where.params,
-    )).map(({ bucket_start, ...counts }) => ({ bucketStart: bucket_start, ...counts }));
+    )
+  ).map(({ bucket_start, ...counts }) => ({ bucketStart: bucket_start, ...counts }));
 }
 
 export interface SourceSeriesPoint {
@@ -105,11 +107,13 @@ export interface SourceSeriesPoint {
 
 export async function timeSeriesBySourceType(filter: MentionFilter, bucket: Bucket): Promise<SourceSeriesPoint[]> {
   const where = await buildWhere(filter);
-  return (await queryAll<{ bucket_start: number; source_type: string; total: number }>(
+  return (
+    await queryAll<{ bucket_start: number; source_type: string; total: number }>(
       `SELECT ${bucketExpression(bucket)} AS bucket_start, m.source_type, COUNT(*) AS total
      FROM mentions m WHERE ${where.sql} GROUP BY bucket_start, m.source_type ORDER BY bucket_start`,
       where.params,
-    )).map((row) => ({ bucketStart: row.bucket_start, sourceType: row.source_type, total: row.total }));
+    )
+  ).map((row) => ({ bucketStart: row.bucket_start, sourceType: row.source_type, total: row.total }));
 }
 
 const DIMENSIONS = {
@@ -133,11 +137,13 @@ export interface PlatformSeriesPoint extends ToneCounts {
 /** Platform ve kova başına ton sayıları; zaman içindeki ton seyri için. */
 export async function platformToneSeries(filter: MentionFilter, bucket: Bucket): Promise<PlatformSeriesPoint[]> {
   const where = await buildWhere(filter);
-  return (await queryAll<ToneCounts & { bucket_start: number; platform: string }>(
+  return (
+    await queryAll<ToneCounts & { bucket_start: number; platform: string }>(
       `SELECT ${bucketExpression(bucket)} AS bucket_start, ${DIMENSIONS.platform} AS platform, ${SENTIMENT_COUNTS}
      FROM mentions m WHERE ${where.sql} GROUP BY bucket_start, platform ORDER BY bucket_start`,
       where.params,
-    )).map(({ bucket_start, platform, ...counts }) => ({ bucketStart: bucket_start, platform, ...counts }));
+    )
+  ).map(({ bucket_start, platform, ...counts }) => ({ bucketStart: bucket_start, platform, ...counts }));
 }
 
 export interface BreakdownRow extends ToneCounts {
@@ -150,13 +156,15 @@ export interface BreakdownRow extends ToneCounts {
 export async function breakdown(filter: MentionFilter, dimension: Dimension, limit: number): Promise<BreakdownRow[]> {
   const where = await buildWhere(filter);
   const expression = DIMENSIONS[dimension];
-  return (await queryAll<ToneCounts & { dimension_key: string; engagement: number | null; reach: number | null }>(
+  return (
+    await queryAll<ToneCounts & { dimension_key: string; engagement: number | null; reach: number | null }>(
       `SELECT ${expression} AS dimension_key, ${SENTIMENT_COUNTS},
        SUM(m.engagement) AS engagement, MAX(m.reach) AS reach
      FROM mentions m WHERE ${where.sql} AND ${expression} IS NOT NULL
      GROUP BY dimension_key ORDER BY total DESC, dimension_key LIMIT ?`,
       [...where.params, limit],
-    )).map(({ dimension_key, engagement, reach, ...counts }) => ({
+    )
+  ).map(({ dimension_key, engagement, reach, ...counts }) => ({
     key: dimension_key,
     ...counts,
     engagement: engagement ?? 0,
@@ -170,12 +178,14 @@ export interface TopicBreakdownRow extends ToneCounts {
 
 export async function topicBreakdown(filter: MentionFilter): Promise<TopicBreakdownRow[]> {
   const where = await buildWhere(filter);
-  return (await queryAll<ToneCounts & { topic_id: string }>(
+  return (
+    await queryAll<ToneCounts & { topic_id: string }>(
       `SELECT mt.topic_id, ${SENTIMENT_COUNTS}
      FROM mentions m JOIN mention_topics mt ON mt.mention_id = m.id
      WHERE ${where.sql} GROUP BY mt.topic_id ORDER BY total DESC`,
       where.params,
-    )).map(({ topic_id, ...counts }) => ({ topicId: topic_id, ...counts }));
+    )
+  ).map(({ topic_id, ...counts }) => ({ topicId: topic_id, ...counts }));
 }
 
 export interface HeatmapCell {
@@ -190,10 +200,10 @@ export async function weekdayHourHeatmap(filter: MentionFilter): Promise<Heatmap
   const localMs = `(m.published_at + ${TIMEZONE_OFFSET_MS})`;
   // 1 Ocak 1970 Perşembe'dir; +3 kaydırma Pazartesi'yi 0 yapar.
   return await queryAll<HeatmapCell>(
-      `SELECT ((${localMs} / 86400000) + 3) % 7 AS weekday, (${localMs} / 3600000) % 24 AS hour, COUNT(*) AS total
+    `SELECT ((${localMs} / 86400000) + 3) % 7 AS weekday, (${localMs} / 3600000) % 24 AS hour, COUNT(*) AS total
      FROM mentions m WHERE ${where.sql} GROUP BY weekday, hour`,
-      where.params,
-    );
+    where.params,
+  );
 }
 
 export interface StoryRow {
@@ -209,7 +219,8 @@ export interface StoryRow {
 /** En çok yayılan hikâyeler: aynı haberin farklı yayınları tek satırda. */
 export async function topStories(filter: MentionFilter, limit: number): Promise<StoryRow[]> {
   const where = await buildWhere(filter);
-  return (await queryAll<{
+  return (
+    await queryAll<{
       story_key: string;
       title: string;
       publications: number;
@@ -228,7 +239,8 @@ export async function topStories(filter: MentionFilter, limit: number): Promise<
      FROM mentions m WHERE ${where.sql}
      GROUP BY m.story_key ORDER BY publications DESC, first_seen_at DESC LIMIT ?`,
       [...where.params, limit],
-    )).map((row) => ({
+    )
+  ).map((row) => ({
     storyKey: row.story_key,
     title: row.title,
     publications: row.publications,

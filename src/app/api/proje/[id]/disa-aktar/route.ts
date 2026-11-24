@@ -62,7 +62,10 @@ function toRow(mention: Mention, topicNames: ReadonlyMap<string, string>): strin
     EMOTION_LABELS[mention.emotion],
     INTENT_LABELS[mention.intent],
     mention.isSarcastic ? "evet" : "hayır",
-    mention.topicIds.map((id) => topicNames.get(id)).filter(Boolean).join(", "),
+    mention.topicIds
+      .map((id) => topicNames.get(id))
+      .filter(Boolean)
+      .join(", "),
     mention.engagement,
     mention.reach,
     mention.language,
@@ -86,12 +89,12 @@ export async function GET(request: NextRequest, context: RouteContext<"/api/proj
   const body = `﻿${[COLUMNS.join(SEPARATOR), ...mentions.map((mention) => toRow(mention, topicNames))].join("\r\n")}\r\n`;
 
   await recordAudit({
-        workspaceId: loaded.workspace.id,
-        action: "dışa-aktarım.csv",
-        objectType: "proje",
-        objectId: loaded.project.id,
-        detail: `${mentions.length} satır${query.queryText ? `, süzgeç: ${query.queryText}` : ""}`,
-      });
+    workspaceId: loaded.workspace.id,
+    action: "dışa-aktarım.csv",
+    objectType: "proje",
+    objectId: loaded.project.id,
+    detail: `${mentions.length} satır${query.queryText ? `, süzgeç: ${query.queryText}` : ""}`,
+  });
 
   const fileName = `yanki-${timestamp.format(loaded.now).slice(0, 10)}.csv`;
   return new Response(body, {

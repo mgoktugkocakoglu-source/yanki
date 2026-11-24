@@ -41,9 +41,11 @@ export async function seedAgendaProjects(now: number): Promise<string[]> {
   if (!workspace || connectorIds.length === 0) return [];
 
   const existing = new Set((await listProjects(workspace.id)).map((project) => project.name));
-  const created = (await Promise.all(AGENDA_PROJECTS.filter((spec) => !existing.has(spec.name)).map(
+  const created = await Promise.all(
+    AGENDA_PROJECTS.filter((spec) => !existing.has(spec.name)).map(
       async (spec, index) => (await createProject(workspace.id, { name: spec.name, description: spec.description, query: spec.query, connectorIds }, now + index)).id,
-    )));
+    ),
+  );
   await execute("INSERT INTO app_meta (key, value) VALUES (?, ?)", [SEEDED_KEY, String(now)]);
   return created;
 }

@@ -20,7 +20,9 @@ export interface AxisScale {
 
 /** 0'dan başlayan, yuvarlak sayılarda biten dikey eksen. */
 export function niceScale(maxValue: number, tickCount = 4): AxisScale {
-  const scale = scaleLinear().domain([0, Math.max(1, maxValue)]).nice(tickCount);
+  const scale = scaleLinear()
+    .domain([0, Math.max(1, maxValue)])
+    .nice(tickCount);
   const ticks = scale.ticks(tickCount).filter(Number.isInteger);
   return { max: scale.domain()[1], ticks };
 }
@@ -30,11 +32,7 @@ export function GridLines({ scale }: { scale: AxisScale }) {
   return (
     <div className="pointer-events-none absolute inset-0" aria-hidden="true">
       {scale.ticks.map((tick) => (
-        <div
-          key={tick}
-          className="absolute inset-x-0 flex items-center"
-          style={{ bottom: `${(tick / scale.max) * 100}%`, transform: "translateY(50%)" }}
-        >
+        <div key={tick} className="absolute inset-x-0 flex items-center" style={{ bottom: `${(tick / scale.max) * 100}%`, transform: "translateY(50%)" }}>
           <span className="reading w-9 shrink-0 pr-2 text-right text-[0.6875rem] text-ink-muted">{formatCompact(tick)}</span>
           <span className="h-px flex-1" style={{ background: tick === 0 ? "var(--axis)" : "var(--grid)" }} />
         </div>
@@ -157,9 +155,7 @@ export function TimeAxis({ buckets, bucket, maxLabels, className = "" }: TimeAxi
         return (
           <span key={bucketStart} className="relative min-w-0 flex-1">
             {order === undefined ? null : (
-              <span
-                className={`reading absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.6875rem] text-ink-muted ${hiddenOnNarrow ? "max-sm:hidden" : ""}`}
-              >
+              <span className={`reading absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.6875rem] text-ink-muted ${hiddenOnNarrow ? "max-sm:hidden" : ""}`}>
                 {formatBucket(bucketStart, bucket)}
               </span>
             )}

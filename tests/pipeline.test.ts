@@ -88,9 +88,7 @@ describe("liste, sayım ve grafik tutarlılığı", () => {
     const topicNames = new Map((await listTopics(project.id)).map((topic) => [topic.id, topic.name]));
     const all = await listMentions({ projectId: project.id }, { limit: 100_000, offset: 0 });
     const searchTexts = new Map(
-      (await queryAll<{ id: string; search_text: string }>("SELECT id, search_text FROM mentions WHERE project_id = ?", [project.id])).map(
-        (row) => [row.id, row.search_text],
-      ),
+      (await queryAll<{ id: string; search_text: string }>("SELECT id, search_text FROM mentions WHERE project_id = ?", [project.id])).map((row) => [row.id, row.search_text]),
     );
 
     const expected = all.filter((mention) => {
@@ -128,9 +126,7 @@ describe("insan düzeltmeleri", () => {
     expect(after.negative).toBe(before.negative - 1);
     expect(after.positive).toBe(before.positive + 1);
 
-    const reloaded = (await listMentions({ ...filter, query: parseQuery("ton:olumlu") }, { limit: 100_000, offset: 0 })).find(
-      (mention) => mention.id === target.id,
-    );
+    const reloaded = (await listMentions({ ...filter, query: parseQuery("ton:olumlu") }, { limit: 100_000, offset: 0 })).find((mention) => mention.id === target.id);
     expect(reloaded).toMatchObject({ sentiment: "negative", sentimentOverride: "positive" });
 
     await setSentimentOverride(target.id, null);
@@ -191,6 +187,6 @@ describe("demo verisinin yenilenmesi", () => {
     expect(latest).toBeLessThan(nextDay);
     expect(nextDay - latest).toBeLessThan(DAY_MS);
     // Hacim aynı ölçekte kalır (yalnızca bugünün kısmi günü farklıdır).
-    expect(Math.abs(await countMentions({ projectId: project.id }) - before)).toBeLessThan(before * 0.05);
+    expect(Math.abs((await countMentions({ projectId: project.id })) - before)).toBeLessThan(before * 0.05);
   });
 });

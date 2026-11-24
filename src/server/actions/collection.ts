@@ -24,13 +24,13 @@ export async function collectNowAction(_previous: FormState, formData: FormData)
 
   const project = await getProject(projectId);
   await recordAudit({
-        actor: viewer?.email,
-        workspaceId: project?.workspaceId ?? null,
-        action: "tarama.elle",
-        objectType: "proje",
-        objectId: projectId,
-        detail: `${outcome.inserted} yeni içerik`,
-      });
+    actor: viewer?.email,
+    workspaceId: project?.workspaceId ?? null,
+    action: "tarama.elle",
+    objectType: "proje",
+    objectId: projectId,
+    detail: `${outcome.inserted} yeni içerik`,
+  });
   refresh();
   const failed = outcome.runs.filter((run) => run.status === "error").length;
   const suffix = failed > 0 ? ` ${failed} kaynağa ulaşılamadı.` : "";

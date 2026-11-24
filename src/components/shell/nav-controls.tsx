@@ -33,9 +33,7 @@ export function NavTabs({ items, label }: { items: NavItem[]; label: string }) {
             key={item.href}
             href={withRange(item.href, range)}
             aria-current={active ? "page" : undefined}
-            className={`relative whitespace-nowrap px-3 py-2.5 text-[0.875rem] font-medium transition-colors ${
-              active ? "text-brand-strong" : "text-ink-soft hover:text-ink"
-            }`}
+            className={`relative whitespace-nowrap px-3 py-2.5 text-[0.875rem] font-medium transition-colors ${active ? "text-brand-strong" : "text-ink-soft hover:text-ink"}`}
           >
             {item.label}
             {active ? <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-brand" aria-hidden="true" /> : null}
@@ -113,8 +111,7 @@ export function RangePicker() {
   );
 }
 
-const SELECT_CLASS =
-  "h-9 w-full cursor-pointer truncate rounded-lg border border-line bg-surface py-0 pl-2.5 pr-7 text-[0.875rem] font-medium text-ink hover:border-line-strong";
+const SELECT_CLASS = "h-9 w-full cursor-pointer truncate rounded-lg border border-line bg-surface py-0 pl-2.5 pr-7 text-[0.875rem] font-medium text-ink hover:border-line-strong";
 
 interface Option {
   id: string;
@@ -140,11 +137,7 @@ export function ProjectSwitcher({ projects, currentId }: { projects: Option[]; c
   return (
     <label className="block">
       <span className="sr-only">Proje</span>
-      <select
-        className={`${SELECT_CLASS} ${pending ? "opacity-60" : ""}`}
-        value={currentId ?? ""}
-        onChange={(event) => go(event.target.value)}
-      >
+      <select className={`${SELECT_CLASS} ${pending ? "opacity-60" : ""}`} value={currentId ?? ""} onChange={(event) => go(event.target.value)}>
         {currentId === null ? <option value="">Proje seçin</option> : null}
         {projects.map((project) => (
           <option key={project.id} value={project.id}>
@@ -157,25 +150,12 @@ export function ProjectSwitcher({ projects, currentId }: { projects: Option[]; c
 }
 
 /** Çalışma alanı değiştirici: seçim sunucuda çereze yazılır. */
-export function WorkspaceSwitcher({
-  workspaces,
-  currentId,
-  action,
-}: {
-  workspaces: Option[];
-  currentId: string;
-  action: (formData: FormData) => Promise<void>;
-}) {
+export function WorkspaceSwitcher({ workspaces, currentId, action }: { workspaces: Option[]; currentId: string; action: (formData: FormData) => Promise<void> }) {
   return (
     <form action={action}>
       <label className="block">
         <span className="sr-only">Çalışma alanı</span>
-        <select
-          name="workspaceId"
-          className={SELECT_CLASS}
-          defaultValue={currentId}
-          onChange={(event) => event.currentTarget.form?.requestSubmit()}
-        >
+        <select name="workspaceId" className={SELECT_CLASS} defaultValue={currentId} onChange={(event) => event.currentTarget.form?.requestSubmit()}>
           {workspaces.map((workspace) => (
             <option key={workspace.id} value={workspace.id}>
               {workspace.name}

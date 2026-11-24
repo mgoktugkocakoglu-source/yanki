@@ -82,7 +82,14 @@ export function SearchBox({ platforms }: { platforms: SearchPlatform[] }) {
                 platform.usable ? "cursor-pointer border-line-strong bg-surface hover:border-ink-muted" : "border-dashed border-line bg-sunken text-ink-muted"
               }`}
             >
-              <input type="checkbox" name="connectorIds" value={platform.id} defaultChecked={platform.usable} disabled={!platform.usable} className="h-4 w-4 accent-[var(--brand)]" />
+              <input
+                type="checkbox"
+                name="connectorIds"
+                value={platform.id}
+                defaultChecked={platform.usable}
+                disabled={!platform.usable}
+                className="h-4 w-4 accent-[var(--brand)]"
+              />
               {platform.name}
               {platform.usable ? null : <span className="text-[0.75rem]">· {platform.reason}</span>}
             </label>

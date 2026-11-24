@@ -147,9 +147,7 @@ export function findFieldSpec(rawName: string): FieldSpec | undefined {
   return SPEC_BY_ALIAS.get(foldWord(rawName));
 }
 
-export type FieldValueResult =
-  | { ok: true; value: string | number }
-  | { ok: false; reason: string };
+export type FieldValueResult = { ok: true; value: string | number } | { ok: false; reason: string };
 
 /** Kullanıcının yazdığı alan değerini kanonik değere çevirir. */
 export function resolveFieldValue(spec: FieldSpec, rawValue: string): FieldValueResult {

@@ -23,8 +23,7 @@ export type SolutionDemo = "public";
 
 /** "Demoda aç" bağlantısının hedefi. */
 export type SolutionTarget =
-  | { kind: "project"; section: "" | "bahsetmeler" | "analiz" | "uyarilar" | "kaynaklar" | "iddialar"; query?: string }
-  | { kind: "workspace"; path: "/karsilastirma" | "/projeler" };
+  { kind: "project"; section: "" | "bahsetmeler" | "analiz" | "uyarilar" | "kaynaklar" | "iddialar"; query?: string } | { kind: "workspace"; path: "/karsilastirma" | "/projeler" };
 
 export interface SolutionStep {
   title: string;
@@ -155,8 +154,14 @@ const AVAILABLE: Available[] = [
     headline: "Hangi iddia yayılıyor, kim doğrulamış?",
     lead: "Yankı bir konudaki içeriklerden kontrol edilebilir iddiaları çıkarır, aynı iddianın farklı anlatımlarını tek başlıkta toplar ve doğrulama kuruluşlarının bu iddia hakkında yayımladığı değerlendirmeleri yanına koyar. Hükmü Yankı vermez; kararı analist verir.",
     steps: [
-      { title: "İddiaları ayıklayın", text: "Dil modeli, görüş ve yorumu ayırıp yalnızca kanıtla sınanabilecek önermeleri listeler; her iddianın kaç içerikte ve hangi platformlarda geçtiği yazılır." },
-      { title: "Yayımlanmış doğrulamayı görün", text: "Her iddia doğrulama kuruluşlarının arşivinde aranır; eşleşen kayıt, kuruluşun adı, verdiği derecelendirme ve bağlantısıyla gösterilir." },
+      {
+        title: "İddiaları ayıklayın",
+        text: "Dil modeli, görüş ve yorumu ayırıp yalnızca kanıtla sınanabilecek önermeleri listeler; her iddianın kaç içerikte ve hangi platformlarda geçtiği yazılır.",
+      },
+      {
+        title: "Yayımlanmış doğrulamayı görün",
+        text: "Her iddia doğrulama kuruluşlarının arşivinde aranır; eşleşen kayıt, kuruluşun adı, verdiği derecelendirme ve bağlantısıyla gösterilir.",
+      },
       { title: "Dayanağa inin", text: "Her iddia, onu taşıyan içeriklere bağlanır; analist kaynağı kendi gözüyle okur ve değerlendirmeyi kendisi yapar." },
     ],
     limits: [
@@ -264,10 +269,34 @@ const AVAILABLE: Available[] = [
 
 /** Karşılığı henüz yazılmamış çözümler. Sitede gösterilmez. */
 const PLANNED: Planned[] = [
-  { slug: "konum-analizi", group: "use-case", name: "Konum analizi", summary: "Konuşmanın coğrafi dağılımı.", missing: "İçerikten yer adı çıkarma ve harita görünümü; bugün yalnızca elle tanımlanan mahalle konuları var." },
-  { slug: "urun-analizi", group: "use-case", name: "Ürün analizi", summary: "Ürün ve özellik düzeyinde geri bildirim.", missing: "Ürün kataloğu ve özellik düzeyinde ton; bugün yalnızca elle tanımlanan konular var." },
-  { slug: "tuketici-icgoruleri", group: "use-case", name: "Tüketici içgörüleri", summary: "Kitle ve ilgi alanı çözümlemesi.", missing: "Kendiliğinden konu keşfi ve anlatı kümeleme." },
-  { slug: "sosyal-medya-pazarlamasi", group: "use-case", name: "Sosyal medya pazarlaması", summary: "Yayın planlama ve kampanya ölçümü.", missing: "Yayınlama, takvim ve kampanya ölçümü modülleri." },
+  {
+    slug: "konum-analizi",
+    group: "use-case",
+    name: "Konum analizi",
+    summary: "Konuşmanın coğrafi dağılımı.",
+    missing: "İçerikten yer adı çıkarma ve harita görünümü; bugün yalnızca elle tanımlanan mahalle konuları var.",
+  },
+  {
+    slug: "urun-analizi",
+    group: "use-case",
+    name: "Ürün analizi",
+    summary: "Ürün ve özellik düzeyinde geri bildirim.",
+    missing: "Ürün kataloğu ve özellik düzeyinde ton; bugün yalnızca elle tanımlanan konular var.",
+  },
+  {
+    slug: "tuketici-icgoruleri",
+    group: "use-case",
+    name: "Tüketici içgörüleri",
+    summary: "Kitle ve ilgi alanı çözümlemesi.",
+    missing: "Kendiliğinden konu keşfi ve anlatı kümeleme.",
+  },
+  {
+    slug: "sosyal-medya-pazarlamasi",
+    group: "use-case",
+    name: "Sosyal medya pazarlaması",
+    summary: "Yayın planlama ve kampanya ölçümü.",
+    missing: "Yayınlama, takvim ve kampanya ölçümü modülleri.",
+  },
   { slug: "dijital-pazarlama", group: "use-case", name: "Dijital pazarlama", summary: "Reklam ve kanal performansı.", missing: "Reklam ve web analitiği bağlantıları." },
   { slug: "ilac-ve-saglik", group: "organization", name: "İlaç ve sağlık", summary: "Sektöre özel demo ve konu şablonları.", missing: "Sektör demo verisi ve konu şablonu." },
   { slug: "spor", group: "organization", name: "Spor", summary: "Sektöre özel demo ve konu şablonları.", missing: "Sektör demo verisi ve konu şablonu." },

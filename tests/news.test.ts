@@ -203,7 +203,10 @@ describe("arşiv ve eşleştirme", () => {
         .map((entry) => entry.externalId);
       const candidates = (await findCandidateArticles(plan.groups, since)).map((entry) => entry.externalId);
       expect(expected.length, text).toBeGreaterThan(0);
-      expect(expected.every((id) => candidates.includes(id)), text).toBe(true);
+      expect(
+        expected.every((id) => candidates.includes(id)),
+        text,
+      ).toBe(true);
       expect(candidates.includes("5"), text).toBe(false);
     }
   });

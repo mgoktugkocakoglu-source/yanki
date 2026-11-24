@@ -39,8 +39,8 @@ export default async function ReportPage({ params, searchParams }: PageProps<"/p
             </button>
           </form>
           <p className="mt-3 max-w-[70ch] text-[0.8125rem] text-ink-muted">
-            Rapor, paylaşılabilir bir bağlantıda açılır. Bağlantıyı bilen herkes raporu salt okunur görür; rapor her açılışta güncel veriyle çizilir. PDF için rapor
-            sayfasındaki “Yazdır / PDF kaydet” düğmesini kullanın.
+            Rapor, paylaşılabilir bir bağlantıda açılır. Bağlantıyı bilen herkes raporu salt okunur görür; rapor her açılışta güncel veriyle çizilir. PDF için rapor sayfasındaki
+            “Yazdır / PDF kaydet” düğmesini kullanın.
           </p>
         </Panel>
 

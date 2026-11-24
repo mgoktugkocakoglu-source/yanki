@@ -17,7 +17,8 @@ async function Reset({ params }: { params: Promise<{ token: string }> }) {
   return (
     <>
       <TokenHeading title="Yeni parola belirleyin">
-        <span className="reading break-all font-medium text-ink">{target.email}</span> hesabı için yeni parolanızı yazın. Kaydettiğinizde açık oturumlarınız kapanır ve yeni parolayla giriş yaparsınız.
+        <span className="reading break-all font-medium text-ink">{target.email}</span> hesabı için yeni parolanızı yazın. Kaydettiğinizde açık oturumlarınız kapanır ve yeni
+        parolayla giriş yaparsınız.
       </TokenHeading>
       <div className="mt-6">
         <TokenPasswordForm mode="reset" token={token} minLength={PASSWORD_MIN_LENGTH} />

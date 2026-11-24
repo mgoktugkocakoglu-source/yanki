@@ -118,11 +118,7 @@ export function detectAnomalies(series: readonly SeriesBucket[], options: Anomal
     if (score >= tuning.score && bucket.total >= tuning.minVolume && bucket.total >= MIN_RATIO * Math.max(baseline, 1)) {
       kinds.push("volume");
     }
-    if (
-      bucket.negative >= tuning.minNegative &&
-      negativeShare - baselineNegativeShare >= tuning.toneJump &&
-      negativeShare >= TONE_SHARE_RATIO * baselineNegativeShare
-    ) {
+    if (bucket.negative >= tuning.minNegative && negativeShare - baselineNegativeShare >= tuning.toneJump && negativeShare >= TONE_SHARE_RATIO * baselineNegativeShare) {
       kinds.push("tone");
     }
     if (kinds.length === 0) return;

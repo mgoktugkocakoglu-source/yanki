@@ -63,7 +63,12 @@ function ClaimCard({ claim, index, projectId, rangeKey, searched }: { claim: Cla
                         " bu iddiayı inceledi"
                       )}
                       {check.reviewDate ? <span className="text-ink-muted"> · {formatDateTime(check.reviewDate)}</span> : null}
-                      <a href={check.url} target="_blank" rel="noopener noreferrer" className="mt-0.5 flex items-start gap-1 text-[0.875rem] font-medium text-brand-strong hover:underline">
+                      <a
+                        href={check.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-0.5 flex items-start gap-1 text-[0.875rem] font-medium text-brand-strong hover:underline"
+                      >
                         <span>{check.title || check.claimText || check.url}</span>
                         <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       </a>
@@ -137,7 +142,9 @@ export default async function ClaimsPage({ params, searchParams }: PageProps<"/p
           ) : null}
 
           {run.claims.length === 0 ? (
-            <EmptyState title="Kontrol edilmeye değer iddia bulunamadı">İncelenen içerikler görüş, soru ya da duyuru ağırlıklı; model somut bir olgusal iddia çıkarmadı.</EmptyState>
+            <EmptyState title="Kontrol edilmeye değer iddia bulunamadı">
+              İncelenen içerikler görüş, soru ya da duyuru ağırlıklı; model somut bir olgusal iddia çıkarmadı.
+            </EmptyState>
           ) : (
             <ol className="flex flex-col gap-3">
               {run.claims.map((claim, index) => (

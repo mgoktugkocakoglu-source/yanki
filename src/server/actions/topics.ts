@@ -29,7 +29,10 @@ const MAX_TOPICS = 60;
 /** Her satır: "Grup | Konu adı | virgülle ayrılmış kelimeler". */
 function parseTopicLines(text: string): { topics: TopicInput[] } | { error: string } {
   const topics: TopicInput[] = [];
-  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
   if (lines.length > MAX_TOPICS) return { error: `En çok ${MAX_TOPICS} konu tanımlanabilir.` };
 
   for (const [index, line] of lines.entries()) {
@@ -59,13 +62,13 @@ export async function saveTopicsAction(_previous: FormState, formData: FormData)
   await replaceTopics(project.id, parsed.topics);
   const tagged = await retagProject(project.id);
   await recordAudit({
-        actor: viewer?.email,
-        workspaceId: project.workspaceId,
-        action: "konular.güncellendi",
-        objectType: "proje",
-        objectId: project.id,
-        detail: `${parsed.topics.length} konu, ${tagged} etiket`,
-      });
+    actor: viewer?.email,
+    workspaceId: project.workspaceId,
+    action: "konular.güncellendi",
+    objectType: "proje",
+    objectId: project.id,
+    detail: `${parsed.topics.length} konu, ${tagged} etiket`,
+  });
   refresh();
   return { ok: true, message: `${parsed.topics.length} konu kaydedildi; mevcut içerikler yeniden etiketlendi.`, errors: {} };
 }

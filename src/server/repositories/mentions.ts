@@ -200,9 +200,9 @@ async function loadTopicIds(mentionIds: string[]): Promise<Map<string, MentionTo
 
   const placeholders = mentionIds.map(() => "?").join(", ");
   const rows = await queryAll<{ mention_id: string; topic_id: string; source: string }>(
-      `SELECT mention_id, topic_id, source FROM mention_topics WHERE mention_id IN (${placeholders})`,
-      mentionIds,
-    );
+    `SELECT mention_id, topic_id, source FROM mention_topics WHERE mention_id IN (${placeholders})`,
+    mentionIds,
+  );
   for (const row of rows) {
     const entry = byMention.get(row.mention_id) ?? { all: [], ai: [] };
     entry.all.push(row.topic_id);
@@ -227,10 +227,11 @@ export interface Page {
 
 export async function listMentions(filter: MentionFilter, page: Page, sort: MentionSort = "recent"): Promise<Mention[]> {
   const where = await buildWhere(filter);
-  const rows = await queryAll<MentionRow>(
-      `SELECT ${MENTION_COLUMNS} FROM mentions m WHERE ${where.sql} ORDER BY ${ORDER_BY[sort]} LIMIT ? OFFSET ?`,
-      [...where.params, page.limit, page.offset],
-    );
+  const rows = await queryAll<MentionRow>(`SELECT ${MENTION_COLUMNS} FROM mentions m WHERE ${where.sql} ORDER BY ${ORDER_BY[sort]} LIMIT ? OFFSET ?`, [
+    ...where.params,
+    page.limit,
+    page.offset,
+  ]);
   const topics = await loadTopicIds(rows.map((row) => row.id));
   return rows.map((row) => toMention(row, topics.get(row.id)));
 }
@@ -260,40 +261,40 @@ const INSERT_SQL = `INSERT INTO mentions (
 
 async function insertOne(mention: NewMention): Promise<boolean> {
   const inserted = await execute(INSERT_SQL, [
-      mention.id,
-      mention.workspaceId,
-      mention.projectId,
-      mention.connectorId,
-      mention.sourceType,
-      mention.sourceName,
-      mention.externalId,
-      mention.url,
-      mention.title,
-      mention.content,
-      mention.searchText,
-      mention.authorName,
-      mention.authorHandle,
-      mention.authorFollowers,
-      mention.language,
-      mention.publishedAt,
-      mention.collectedAt,
-      mention.likes,
-      mention.comments,
-      mention.shares,
-      mention.views,
-      mention.engagement,
-      mention.reach,
-      mention.reachBasis,
-      mention.sentiment,
-      mention.sentimentScore,
-      mention.sentimentConfidence,
-      mention.emotion,
-      mention.isSarcastic ? 1 : 0,
-      mention.intent,
-      mention.storyKey,
-      mention.analyzerVersion,
-      mention.isDemo ? 1 : 0,
-    ]);
+    mention.id,
+    mention.workspaceId,
+    mention.projectId,
+    mention.connectorId,
+    mention.sourceType,
+    mention.sourceName,
+    mention.externalId,
+    mention.url,
+    mention.title,
+    mention.content,
+    mention.searchText,
+    mention.authorName,
+    mention.authorHandle,
+    mention.authorFollowers,
+    mention.language,
+    mention.publishedAt,
+    mention.collectedAt,
+    mention.likes,
+    mention.comments,
+    mention.shares,
+    mention.views,
+    mention.engagement,
+    mention.reach,
+    mention.reachBasis,
+    mention.sentiment,
+    mention.sentimentScore,
+    mention.sentimentConfidence,
+    mention.emotion,
+    mention.isSarcastic ? 1 : 0,
+    mention.intent,
+    mention.storyKey,
+    mention.analyzerVersion,
+    mention.isDemo ? 1 : 0,
+  ]);
   if (inserted === 0) return false;
 
   for (const topicId of mention.topicIds) {
@@ -328,11 +329,11 @@ export async function setIrrelevant(id: string, isIrrelevant: boolean): Promise<
 /** Projenin kural tabanlı konu eşleşmelerini baştan yazar; dil modelinin atadıkları korunur. */
 export async function replaceMentionTopics(projectId: string, assignments: Array<{ mentionId: string; topicId: string }>): Promise<void> {
   await transaction(async () => {
-        await execute("DELETE FROM mention_topics WHERE source = 'rule' AND mention_id IN (SELECT id FROM mentions WHERE project_id = ?)", [projectId]);
-        for (const { mentionId, topicId } of assignments) {
-          await execute("INSERT INTO mention_topics (mention_id, topic_id) VALUES (?, ?) ON CONFLICT DO NOTHING", [mentionId, topicId]);
-        }
-      });
+    await execute("DELETE FROM mention_topics WHERE source = 'rule' AND mention_id IN (SELECT id FROM mentions WHERE project_id = ?)", [projectId]);
+    for (const { mentionId, topicId } of assignments) {
+      await execute("INSERT INTO mention_topics (mention_id, topic_id) VALUES (?, ?) ON CONFLICT DO NOTHING", [mentionId, topicId]);
+    }
+  });
 }
 
 /* ── Dil modeli sınıflandırması ───────────────────────────────────────── */
@@ -341,9 +342,9 @@ export async function replaceMentionTopics(projectId: string, assignments: Array
 export async function listUnclassified(filter: MentionFilter, limit: number): Promise<Mention[]> {
   const where = await buildWhere(filter);
   const rows = await queryAll<MentionRow>(
-      `SELECT ${MENTION_COLUMNS} FROM mentions m WHERE ${where.sql} AND m.ai_classified_at IS NULL ORDER BY m.published_at DESC, m.id LIMIT ?`,
-      [...where.params, limit],
-    );
+    `SELECT ${MENTION_COLUMNS} FROM mentions m WHERE ${where.sql} AND m.ai_classified_at IS NULL ORDER BY m.published_at DESC, m.id LIMIT ?`,
+    [...where.params, limit],
+  );
   const topics = await loadTopicIds(rows.map((row) => row.id));
   return rows.map((row) => toMention(row, topics.get(row.id)));
 }
@@ -363,13 +364,13 @@ export interface AiClassification {
 /** Dil modeli sonucunu yazar. Kural tabanlı sonuç ve insan düzeltmesi silinmez. */
 export async function saveAiClassifications(classifications: AiClassification[], model: string, now: number): Promise<void> {
   await transaction(async () => {
-        for (const { mentionId, sentiment, topicIds } of classifications) {
-          await execute("UPDATE mentions SET ai_sentiment = ?, ai_model = ?, ai_classified_at = ? WHERE id = ?", [sentiment, model, now, mentionId]);
-          for (const topicId of topicIds) {
-            await execute("INSERT INTO mention_topics (mention_id, topic_id, source) VALUES (?, ?, 'ai') ON CONFLICT DO NOTHING", [mentionId, topicId]);
-          }
-        }
-      });
+    for (const { mentionId, sentiment, topicIds } of classifications) {
+      await execute("UPDATE mentions SET ai_sentiment = ?, ai_model = ?, ai_classified_at = ? WHERE id = ?", [sentiment, model, now, mentionId]);
+      for (const topicId of topicIds) {
+        await execute("INSERT INTO mention_topics (mention_id, topic_id, source) VALUES (?, ?, 'ai') ON CONFLICT DO NOTHING", [mentionId, topicId]);
+      }
+    }
+  });
 }
 
 export interface SearchableMention {
@@ -380,10 +381,12 @@ export interface SearchableMention {
 /** Yeniden etiketleme ve kök neden analizi için yalnızca arama metinleri. */
 export async function listSearchTexts(filter: MentionFilter, limit: number): Promise<SearchableMention[]> {
   const where = await buildWhere(filter);
-  return (await queryAll<{ id: string; search_text: string }>(
-      `SELECT m.id, m.search_text FROM mentions m WHERE ${where.sql} ORDER BY m.published_at DESC LIMIT ?`,
-      [...where.params, limit],
-    )).map((row) => ({ id: row.id, searchText: row.search_text }));
+  return (
+    await queryAll<{ id: string; search_text: string }>(`SELECT m.id, m.search_text FROM mentions m WHERE ${where.sql} ORDER BY m.published_at DESC LIMIT ?`, [
+      ...where.params,
+      limit,
+    ])
+  ).map((row) => ({ id: row.id, searchText: row.search_text }));
 }
 
 export interface MentionText {
@@ -395,10 +398,12 @@ export interface MentionText {
 /** Yalnızca başlık ve içerik; öne çıkan ifadeleri özgün yazımıyla bulmak için. */
 export async function listTexts(filter: MentionFilter, limit: number): Promise<MentionText[]> {
   const where = await buildWhere(filter);
-  return (await queryAll<{ title: string; content: string; story_key: string }>(
+  return (
+    await queryAll<{ title: string; content: string; story_key: string }>(
       `SELECT m.title, m.content, m.story_key FROM mentions m WHERE ${where.sql} ORDER BY m.published_at DESC LIMIT ?`,
       [...where.params, limit],
-    )).map((row) => ({ title: row.title, content: row.content, storyKey: row.story_key }));
+    )
+  ).map((row) => ({ title: row.title, content: row.content, storyKey: row.story_key }));
 }
 
 /**
@@ -420,4 +425,3 @@ export async function latestPublishedAt(projectId: string): Promise<number | nul
   const row = await queryOne<{ latest: number | null }>("SELECT MAX(published_at) AS latest FROM mentions WHERE project_id = ?", [projectId]);
   return row?.latest ?? null;
 }
-

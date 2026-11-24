@@ -45,34 +45,37 @@ export default async function ProjectsPage() {
             </Link>
           }
         >
-          İzlemek istediğiniz adı ve varsa yaygın yazımlarını girin. Kaydetmeden önce gerçek kaynaklardan örnek içerik görüp kelimeleri ayarlayabilirsiniz; ilk sonuçlar birkaç saniyede gelir.
+          İzlemek istediğiniz adı ve varsa yaygın yazımlarını girin. Kaydetmeden önce gerçek kaynaklardan örnek içerik görüp kelimeleri ayarlayabilirsiniz; ilk sonuçlar birkaç
+          saniyede gelir.
         </EmptyState>
       ) : (
         <ul className="grid gap-4 lg:grid-cols-2">
-          {(await Promise.all(projects.map(async (project) => {
-                                  const week = await summarize({ projectId: project.id, range: lastWeek });
-                                  const collectedAt = await latestCollectedAt(project.id);
-                                  const connectorNames = project.connectorIds.map((id) => getConnector(id)?.descriptor.name).filter(Boolean);
-                                  return (
-                                    <li key={project.id}>
-                                      <Link href={projectHref(project.id)} className="group block h-full rounded-lg border border-line bg-surface p-5 transition-colors hover:border-brand">
-                                        <div className="flex items-baseline justify-between gap-4">
-                                          <h2 className="font-display text-[1.35rem] font-medium leading-tight group-hover:text-brand-strong">{project.name}</h2>
-                                          <span className="shrink-0 text-right text-[0.8125rem] text-ink-muted">
-                                            <span className="reading block text-[1.0625rem] font-medium text-ink">{formatNumber(week.total)}</span>
-                                            son 7 gün
-                                          </span>
-                                        </div>
-                                        {project.description ? <p className="mt-1 text-ink-soft">{project.description}</p> : null}
-                                        <QuerySummary query={project.query} className="mt-3" />
-                                        <p className="mt-3 text-[0.8125rem] text-ink-muted">
-                                          {isLive ? (connectorNames.length > 0 ? connectorNames.join(" · ") : "Kaynak seçilmemiş") : "Kaynak taranmıyor"}
-                                          {isLive && collectedAt ? ` · son içerik ${formatRelative(collectedAt, now)}` : ""}
-                                        </p>
-                                      </Link>
-                                    </li>
-                                  );
-                                })))}
+          {await Promise.all(
+            projects.map(async (project) => {
+              const week = await summarize({ projectId: project.id, range: lastWeek });
+              const collectedAt = await latestCollectedAt(project.id);
+              const connectorNames = project.connectorIds.map((id) => getConnector(id)?.descriptor.name).filter(Boolean);
+              return (
+                <li key={project.id}>
+                  <Link href={projectHref(project.id)} className="group block h-full rounded-lg border border-line bg-surface p-5 transition-colors hover:border-brand">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <h2 className="font-display text-[1.35rem] font-medium leading-tight group-hover:text-brand-strong">{project.name}</h2>
+                      <span className="shrink-0 text-right text-[0.8125rem] text-ink-muted">
+                        <span className="reading block text-[1.0625rem] font-medium text-ink">{formatNumber(week.total)}</span>
+                        son 7 gün
+                      </span>
+                    </div>
+                    {project.description ? <p className="mt-1 text-ink-soft">{project.description}</p> : null}
+                    <QuerySummary query={project.query} className="mt-3" />
+                    <p className="mt-3 text-[0.8125rem] text-ink-muted">
+                      {isLive ? (connectorNames.length > 0 ? connectorNames.join(" · ") : "Kaynak seçilmemiş") : "Kaynak taranmıyor"}
+                      {isLive && collectedAt ? ` · son içerik ${formatRelative(collectedAt, now)}` : ""}
+                    </p>
+                  </Link>
+                </li>
+              );
+            }),
+          )}
         </ul>
       )}
     </PageContainer>

@@ -86,7 +86,8 @@ function toRawItem(post: XPost, users: ReadonlyMap<string, XUser>): RawItem | nu
 function explain(error: unknown): never {
   if (error instanceof SourceRequestError) {
     if (error.status === 401) throw new SourceRequestError("X anahtarı geçersiz (401). X_BEARER_TOKEN değerini denetleyin.", 401);
-    if (error.status === 402 || error.status === 403) throw new SourceRequestError(`X erişimi reddetti (${error.status}). Hesapta kredi ve arama yetkisi olduğunu denetleyin.`, error.status);
+    if (error.status === 402 || error.status === 403)
+      throw new SourceRequestError(`X erişimi reddetti (${error.status}). Hesapta kredi ve arama yetkisi olduğunu denetleyin.`, error.status);
     if (error.status === 429) throw new SourceRequestError("X hız sınırına takıldı (429); sonraki taramada yeniden denenecek.", 429);
   }
   throw error;
@@ -126,7 +127,8 @@ export const xConnector: Connector = {
     sourceType: "social",
     summary: "Resmî API ile son 7 günün gönderilerinde anahtar kelime araması; takipçi, beğeni, yanıt ve yeniden paylaşım sayılarıyla.",
     access: "open",
-    terms: "Resmî ücretli API: okunan gönderi başına ücret alınır. Günlük okuma sınırı YANKI_X_DAILY_POST_LIMIT ile belirlenir. Gönderiler ve kullanıcı adları kişisel veridir (KVKK).",
+    terms:
+      "Resmî ücretli API: okunan gönderi başına ücret alınır. Günlük okuma sınırı YANKI_X_DAILY_POST_LIMIT ile belirlenir. Gönderiler ve kullanıcı adları kişisel veridir (KVKK).",
     requiredSetting: "X_BEARER_TOKEN",
     metered: true,
     dailyLimit: config.xDailyPostLimit,

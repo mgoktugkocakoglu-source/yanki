@@ -33,7 +33,11 @@ export default async function SystemPage() {
       <div className="flex flex-col gap-5">
         <StatTiles
           stats={[
-            { label: "Kurum", value: formatNumber(organizations.length), note: `${formatNumber(organizations.filter((organization) => organization.suspendedAt !== null).length)} askıda` },
+            {
+              label: "Kurum",
+              value: formatNumber(organizations.length),
+              note: `${formatNumber(organizations.filter((organization) => organization.suspendedAt !== null).length)} askıda`,
+            },
             { label: "Hesap", value: formatNumber(accounts), note: "kurum yöneticileri ve kullanıcılar" },
             { label: "Dağıtılmamış kredi", value: formatNumber(pooled), note: `kullanıcılarda ${formatNumber(held)}` },
             { label: "Son 30 günde harcanan", value: formatNumber(await creditsSpentSince(null, now - MONTH_MS)), note: "tüm kurumlar" },

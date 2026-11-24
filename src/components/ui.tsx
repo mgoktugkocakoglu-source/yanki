@@ -134,5 +134,4 @@ export const BUTTON_PRIMARY =
 export const BUTTON_SECONDARY =
   "inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-line-strong bg-surface px-3.5 text-[0.875rem] font-semibold text-ink transition-colors hover:border-ink-muted disabled:cursor-not-allowed disabled:opacity-60";
 
-export const INPUT =
-  "w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-muted hover:border-ink-muted";
+export const INPUT = "w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-[0.9375rem] text-ink placeholder:text-ink-muted hover:border-ink-muted";
