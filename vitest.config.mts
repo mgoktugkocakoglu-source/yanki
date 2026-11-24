@@ -9,6 +9,6 @@ export default defineConfig({
     environment: "node",
     include: ["tests/**/*.test.ts"],
     // Testler gerçek veritabanı dosyasına dokunmaz.
-    env: { YANKI_DB_PATH: ":memory:", YANKI_SEED_FIXTURE: "1" },
+    env: { YANKI_PG_DIR: ":memory:", YANKI_SEED_FIXTURE: "1" },
   },
 });

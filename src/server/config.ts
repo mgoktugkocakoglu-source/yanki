@@ -17,8 +17,17 @@ function readInteger(name: string, fallback: number, minimum: number): number {
 }
 
 export const config = {
-  /** SQLite dosyası. Kurum içi kurulumda kalıcı bir birime yönlendirilir. */
-  databasePath: process.env.YANKI_DB_PATH ?? path.join(process.cwd(), "data", "yanki.db"),
+  /**
+   * PostgreSQL bağlantı adresi (postgres://kullanici:parola@sunucu:5432/veritabani).
+   * Tanımlı değilse uygulamayla gelen gömülü PostgreSQL kullanılır.
+   */
+  databaseUrl: process.env.DATABASE_URL?.trim() || null,
+
+  /** Bağlantı havuzundaki en çok bağlantı (yalnızca `DATABASE_URL` ile). */
+  databasePoolSize: readInteger("YANKI_DB_POOL_SIZE", 10, 1),
+
+  /** Gömülü PostgreSQL'in veri klasörü; ":memory:" bellekte çalıştırır (testler). */
+  embeddedDatabaseDir: process.env.YANKI_PG_DIR ?? path.join(process.cwd(), "data", "pg"),
 
   /**
    * "institution" kipinde, koşulları yalnızca kişisel kullanıma izin veren
