@@ -116,6 +116,8 @@ Bunları bilerek kullanın; hiçbiri arayüzde gizlenmez.
 
 Tek bir Next.js uygulaması (modüler monolit) ve PostgreSQL. Kurum kurulumunda `DATABASE_URL` ile gerçek bir PostgreSQL sunucusuna bağlanır; geliştirmede ve testlerde uygulamayla gelen gömülü PostgreSQL (PGlite) kullanılır, böylece iki ortamda da aynı SQL çalışır. Bilerek küçük tutuldu: kanıtlanmış bir darboğaz olmadan Kafka, ayrı vektör veritabanı ya da mikroservis eklenmedi. Sınırlar ise ilk günden nettir; her katman bir üsttekinden habersizdir.
 
+Sunucu yolu PostgreSQL 19 üzerinde sınandı (24 Kasım 2026): 214 testin tamamı ve üretim derlemesiyle 150 eşzamanlı istek. Testleri bir sunucuya karşı çalıştırmak için her test dosyasına boş bir veritabanı verip `DATABASE_URL` tanımlamak yeterlidir (`DATABASE_URL=postgres://… npx vitest run tests/auth.test.ts`); dosyalar aynı veritabanını paylaşmamalıdır.
+
 ```text
 src/
   domain/          Alan tipleri, etiketler, metrik tanımları (bağımlılıksız)
