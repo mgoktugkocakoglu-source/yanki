@@ -84,10 +84,10 @@ function fillSeries(points: SeriesPoint[], range: TimeRange, bucket: Bucket): Se
   );
 }
 
-function buildSourceSeries(filter: MentionFilter, range: TimeRange, bucket: Bucket): SourceSeries[] {
+async function buildSourceSeries(filter: MentionFilter, range: TimeRange, bucket: Bucket): Promise<SourceSeries[]> {
   const starts = enumerateBuckets(range, bucket);
   const bySource = new Map<string, Map<number, number>>();
-  for (const point of timeSeriesBySourceType(filter, bucket)) {
+  for (const point of await timeSeriesBySourceType(filter, bucket)) {
     const buckets = bySource.get(point.sourceType) ?? new Map<number, number>();
     buckets.set(point.bucketStart, point.total);
     bySource.set(point.sourceType, buckets);
@@ -103,9 +103,9 @@ function buildSourceSeries(filter: MentionFilter, range: TimeRange, bucket: Buck
     .sort((a, b) => b.total - a.total);
 }
 
-export function scoreTopics(projectId: string, filter: MentionFilter): TopicScore[] {
-  const counts = new Map(topicBreakdown(filter).map((row) => [row.topicId, row]));
-  return listTopics(projectId)
+export async function scoreTopics(projectId: string, filter: MentionFilter): Promise<TopicScore[]> {
+  const counts = new Map((await topicBreakdown(filter)).map((row) => [row.topicId, row]));
+  return (await listTopics(projectId))
     .map((topic) => {
       const row = counts.get(topic.id);
       return {
@@ -224,22 +224,22 @@ function buildBriefing(
   return sentences;
 }
 
-export function getOverview(project: Project, rangeKey: RangeKey, now: number): Overview {
+export async function getOverview(project: Project, rangeKey: RangeKey, now: number): Promise<Overview> {
   const range = resolveRange(rangeKey, now);
   const bucket = RANGE_PRESETS[rangeKey].bucket;
   const filter: MentionFilter = { projectId: project.id, range };
 
-  const summary = summarize(filter);
+  const summary = await summarize(filter);
   // Önceki dönem ancak kapsam o dönemin başına uzanıyorsa karşılaştırılabilir.
   const previous = previousRange(range);
-  const coverageStart = earliestPublishedAt(project.id);
+  const coverageStart = await earliestPublishedAt(project.id);
   const isPreviousCovered = coverageStart !== null && coverageStart < previous.from + bucketSizeMs(bucket);
-  const previousSummary = isPreviousCovered ? summarize({ projectId: project.id, range: previous }) : null;
-  const anomalies = findAnomalies(project.id, range, bucket);
-  const explained = rankAnomalies(anomalies)
-    .slice(0, EXPLAINED_ANOMALIES)
-    .map((anomaly) => explainAnomaly(project, anomaly, bucket));
-  const topics = scoreTopics(project.id, filter);
+  const previousSummary = isPreviousCovered ? await summarize({ projectId: project.id, range: previous }) : null;
+  const anomalies = await findAnomalies(project.id, range, bucket);
+  const explained = (await Promise.all(rankAnomalies(anomalies)
+      .slice(0, EXPLAINED_ANOMALIES)
+      .map(async (anomaly) => explainAnomaly(project, anomaly, bucket))));
+  const topics = await scoreTopics(project.id, filter);
 
   return {
     rangeKey,
@@ -247,15 +247,15 @@ export function getOverview(project: Project, rangeKey: RangeKey, now: number): 
     bucket,
     summary,
     previousSummary,
-    series: fillSeries(timeSeries(filter, bucket), range, bucket),
+    series: fillSeries(await timeSeries(filter, bucket), range, bucket),
     anomalies,
     explained,
-    sourceSeries: buildSourceSeries(filter, range, bucket),
-    platforms: breakdown(filter, "platform", 12),
+    sourceSeries: await buildSourceSeries(filter, range, bucket),
+    platforms: await breakdown(filter, "platform", 12),
     topics,
-    stories: topStories(filter, 5),
-    highlights: listMentions(filter, { limit: 4, offset: 0 }),
+    stories: await topStories(filter, 5),
+    highlights: await listMentions(filter, { limit: 4, offset: 0 }),
     briefing: buildBriefing(rangeKey, range, summary, previousSummary, explained, topics),
-    lastCollectedAt: latestCollectedAt(project.id),
+    lastCollectedAt: await latestCollectedAt(project.id),
   };
 }

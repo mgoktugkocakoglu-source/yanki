@@ -37,10 +37,10 @@ function fakeProvider(respond: (request: ClassifyRequest) => Promise<ClassifyDra
   };
 }
 
-beforeAll(() => {
-  ensureSeeded(NOW);
+beforeAll(async () => {
+  await ensureSeeded(NOW);
   // Demo alanının ikinci projesi kullanılır.
-  project = listProjects(listWorkspaces()[0].id)[1];
+  project = (await listProjects((await listWorkspaces())[0].id))[1];
 });
 
 describe("sınıflandırma istemi", () => {
@@ -67,17 +67,17 @@ describe("dil modeliyle sınıflandırma", () => {
     });
     const outcome = await classifyMentions(project, "24s", NOW, provider);
     expect(outcome).toEqual({ ok: false, reason: "failed", message: "İstek sınırına takıldı." });
-    expect(countAiClassified({ projectId: project.id })).toBe(0);
+    expect(await countAiClassified({ projectId: project.id })).toBe(0);
   });
 
   it("geçersiz sonuçları atar, geçerlileri kural tabanlı sonucu silmeden yazar", async () => {
     const range = resolveRange("24s", NOW);
     const filter = { projectId: project.id, range };
-    const [first, second, third] = listUnclassified(filter, CLASSIFY_RUN_LIMIT);
-    const topics = listTopics(project.id);
+    const [first, second, third] = await listUnclassified(filter, CLASSIFY_RUN_LIMIT);
+    const topics = await listTopics(project.id);
     const newTopic = topics.findIndex((topic) => !first.topicIds.includes(topic.id));
     const flipped = first.sentiment === "negative" ? "positive" : "negative";
-    setSentimentOverride(third.id, "positive");
+    await setSentimentOverride(third.id, "positive");
 
     const provider = fakeProvider(async (request) => ({
       results:
@@ -94,34 +94,34 @@ describe("dil modeliyle sınıflandırma", () => {
       outputTokens: 10,
     }));
 
-    const before = summarize(filter);
+    const before = await summarize(filter);
     const outcome = await classifyMentions(project, "24s", NOW, provider);
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
 
     expect(provider.requests.every((request) => request.items.length <= CLASSIFY_BATCH_SIZE)).toBe(true);
     expect(outcome).toMatchObject({ model: "sahte-sinif", classified: 2, toneChanged: third.sentiment === "negative" ? 1 : 2, topicsAdded: 1 });
-    expect(outcome.remaining).toBe(countMentions(filter) - 2);
+    expect(outcome.remaining).toBe(await countMentions(filter) - 2);
 
-    const reloaded = getMention(first.id)!;
+    const reloaded = (await getMention(first.id))!;
     expect(reloaded).toMatchObject({ sentiment: first.sentiment, aiSentiment: flipped, aiModel: "sahte-sinif" });
     expect(effectiveSentiment(reloaded)).toBe(flipped);
     expect(reloaded.aiTopicIds).toEqual([topics[newTopic].id]);
     expect(reloaded.topicIds).toContain(topics[newTopic].id);
 
     // Geçersiz sonuç gelen içerik sınıflandırılmamış kalır.
-    expect(getMention(second.id)!.aiSentiment).toBeNull();
+    expect((await getMention(second.id))!.aiSentiment).toBeNull();
     // İnsan düzeltmesi dil modelinin önündedir.
-    expect(effectiveSentiment(getMention(third.id)!)).toBe("positive");
+    expect(effectiveSentiment((await getMention(third.id))!)).toBe("positive");
 
     // Sayımlar ve sorgu süzgeci geçerli tonu kullanır.
-    const after = summarize(filter);
+    const after = await summarize(filter);
     expect(after.total).toBe(before.total);
     expect(after[flipped]).toBe(before[flipped] + 1);
-    expect(countMentions({ ...filter, query: parseQuery(`ton:${flipped === "positive" ? "olumlu" : "olumsuz"}`) })).toBe(after[flipped]);
+    expect(await countMentions({ ...filter, query: parseQuery(`ton:${flipped === "positive" ? "olumlu" : "olumsuz"}`) })).toBe(after[flipped]);
 
     // Yeniden etiketleme dil modelinin atadığı konuyu silmez.
-    retagProject(project.id);
-    expect(getMention(first.id)!.aiTopicIds).toEqual([topics[newTopic].id]);
+    await retagProject(project.id);
+    expect((await getMention(first.id))!.aiTopicIds).toEqual([topics[newTopic].id]);
   });
 });

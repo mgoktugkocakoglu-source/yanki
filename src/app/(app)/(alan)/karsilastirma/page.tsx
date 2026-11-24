@@ -62,13 +62,13 @@ export default async function ComparisonPage({ searchParams }: PageProps<"/karsi
     );
   }
 
-  const comparison = getComparison(
-    workspace.id,
-    // Yalnızca kullanıcının görebildiği konular karşılaştırılır.
-    projects.map((project) => project.id),
-    rangeKey,
-    now,
-  );
+  const comparison = await getComparison(
+      workspace.id,
+      // Yalnızca kullanıcının görebildiği konular karşılaştırılır.
+      projects.map((project) => project.id),
+      rangeKey,
+      now,
+    );
   const ranked = [...comparison.projects].sort((a, b) => b.summary.total - a.summary.total);
 
   return (

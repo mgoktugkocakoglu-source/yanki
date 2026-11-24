@@ -85,109 +85,109 @@ export type InvitationResult =
   /** exists: e-posta kayıtlı · pending: bekleyen davet var · seats: koltuk dolu · pool: havuz yetmiyor */
   | { ok: false; reason: "exists" | "pending" | "seats" | "pool" };
 
-export function createInvitation(input: InvitationInput, now: number): InvitationResult {
+export async function createInvitation(input: InvitationInput, now: number): Promise<InvitationResult> {
   const email = normalizeEmail(input.email);
   const credits = Math.max(0, Math.trunc(input.credits));
   const permissions = input.role === "admin" ? cleanPermissions(input.permissions) : [];
-  return transaction((): InvitationResult => {
-    if (emailTaken(email)) return { ok: false, reason: "exists" };
-    if (queryOne(`SELECT 1 FROM invitations WHERE email = ? AND ${OPEN} AND expires_at > ?`, [email, now])) return { ok: false, reason: "pending" };
-    const limit = queryOne<{ seat_limit: number | null }>("SELECT seat_limit FROM organizations WHERE id = ?", [input.orgId])?.seat_limit ?? null;
-    if (limit !== null && seatsInUse(input.orgId, now) >= limit) return { ok: false, reason: "seats" };
-    if (credits > 0 && !changePool(input.orgId, -credits, "davet için ayrıldı", input.invitedBy, null, now)) return { ok: false, reason: "pool" };
+  return await transaction(async (): Promise<InvitationResult> => {
+      if (await emailTaken(email)) return { ok: false, reason: "exists" };
+      if (await queryOne(`SELECT 1 FROM invitations WHERE email = ? AND ${OPEN} AND expires_at > ?`, [email, now])) return { ok: false, reason: "pending" };
+      const limit = (await queryOne<{ seat_limit: number | null }>("SELECT seat_limit FROM organizations WHERE id = ?", [input.orgId]))?.seat_limit ?? null;
+      if (limit !== null && await seatsInUse(input.orgId, now) >= limit) return { ok: false, reason: "seats" };
+      if (credits > 0 && !await changePool(input.orgId, -credits, "davet için ayrıldı", input.invitedBy, null, now)) return { ok: false, reason: "pool" };
 
-    const token = newToken();
-    const invitation: Invitation = {
-      id: randomUUID(),
-      orgId: input.orgId,
-      email,
-      name: input.name.trim(),
-      role: input.role,
-      credits,
-      permissions,
-      invitedBy: input.invitedBy,
-      createdAt: now,
-      expiresAt: now + INVITE_TTL_MS,
-    };
-    execute(
-      "INSERT INTO invitations (id, token_hash, org_id, email, name, role, credits, permissions, invited_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [invitation.id, hashToken(token), invitation.orgId, email, invitation.name, invitation.role, credits, JSON.stringify(permissions), invitation.invitedBy, now, invitation.expiresAt],
-    );
-    return { ok: true, invitation, token };
-  });
+      const token = newToken();
+      const invitation: Invitation = {
+        id: randomUUID(),
+        orgId: input.orgId,
+        email,
+        name: input.name.trim(),
+        role: input.role,
+        credits,
+        permissions,
+        invitedBy: input.invitedBy,
+        createdAt: now,
+        expiresAt: now + INVITE_TTL_MS,
+      };
+      await execute(
+              "INSERT INTO invitations (id, token_hash, org_id, email, name, role, credits, permissions, invited_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              [invitation.id, hashToken(token), invitation.orgId, email, invitation.name, invitation.role, credits, JSON.stringify(permissions), invitation.invitedBy, now, invitation.expiresAt],
+            );
+      return { ok: true, invitation, token };
+    });
 }
 
-export function getInvitation(id: string): Invitation | null {
-  const row = queryOne<InvitationRow>(`SELECT ${COLUMNS} FROM invitations WHERE id = ? AND ${OPEN}`, [id]);
+export async function getInvitation(id: string): Promise<Invitation | null> {
+  const row = await queryOne<InvitationRow>(`SELECT ${COLUMNS} FROM invitations WHERE id = ? AND ${OPEN}`, [id]);
   return row ? toInvitation(row) : null;
 }
 
 /** Bağlantıdaki anahtarla geçerli (kabul edilmemiş, iptal edilmemiş, süresi dolmamış) davet. */
-export function getInvitationByToken(token: string, now: number): Invitation | null {
-  const row = queryOne<InvitationRow>(`SELECT ${COLUMNS} FROM invitations WHERE token_hash = ? AND ${OPEN} AND expires_at > ?`, [hashToken(token), now]);
+export async function getInvitationByToken(token: string, now: number): Promise<Invitation | null> {
+  const row = await queryOne<InvitationRow>(`SELECT ${COLUMNS} FROM invitations WHERE token_hash = ? AND ${OPEN} AND expires_at > ?`, [hashToken(token), now]);
   return row ? toInvitation(row) : null;
 }
 
 /** Kurumun sonuçlanmamış davetleri; süresi dolanlar da listelenir ki iptal edilip kredisi geri alınabilsin. */
-export function listOpenInvitations(orgId: string): Invitation[] {
-  return queryAll<InvitationRow>(`SELECT ${COLUMNS} FROM invitations WHERE org_id = ? AND ${OPEN} ORDER BY created_at DESC`, [orgId]).map(toInvitation);
+export async function listOpenInvitations(orgId: string): Promise<Invitation[]> {
+  return (await queryAll<InvitationRow>(`SELECT ${COLUMNS} FROM invitations WHERE org_id = ? AND ${OPEN} ORDER BY created_at DESC`, [orgId])).map(toInvitation);
 }
 
 /** Daveti iptal eder ve ayrılan krediyi havuza geri koyar. */
-export function revokeInvitation(id: string, actor: string, now: number): boolean {
-  return transaction(() => {
-    const row = queryOne<{ org_id: string; credits: number }>(`SELECT org_id, credits FROM invitations WHERE id = ? AND ${OPEN}`, [id]);
-    if (!row) return false;
-    execute("UPDATE invitations SET revoked_at = ? WHERE id = ?", [now, id]);
-    if (row.credits > 0) changePool(row.org_id, row.credits, "davet iptali", actor, null, now);
-    return true;
-  });
+export async function revokeInvitation(id: string, actor: string, now: number): Promise<boolean> {
+  return await transaction(async () => {
+      const row = await queryOne<{ org_id: string; credits: number }>(`SELECT org_id, credits FROM invitations WHERE id = ? AND ${OPEN}`, [id]);
+      if (!row) return false;
+      await execute("UPDATE invitations SET revoked_at = ? WHERE id = ?", [now, id]);
+      if (row.credits > 0) await changePool(row.org_id, row.credits, "davet iptali", actor, null, now);
+      return true;
+    });
 }
 
 /** Daveti kabul eder: hesabı açar, yetkileri ve ayrılan krediyi tanımlar. Davet geçersizse null. */
-export function acceptInvitation(token: string, passwordHash: string, now: number): User | null {
-  return transaction(() => {
-    const invitation = getInvitationByToken(token, now);
-    if (!invitation || emailTaken(invitation.email)) return null;
-    execute("UPDATE invitations SET accepted_at = ? WHERE id = ?", [now, invitation.id]);
-    return insertUser(
-      {
-        email: invitation.email,
-        name: invitation.name,
-        role: invitation.role,
-        orgId: invitation.orgId,
-        passwordHash,
-        credits: invitation.credits,
-        permissions: invitation.permissions,
-        grantedBy: invitation.invitedBy,
-      },
-      now,
-    );
-  });
+export async function acceptInvitation(token: string, passwordHash: string, now: number): Promise<User | null> {
+  return await transaction(async () => {
+      const invitation = await getInvitationByToken(token, now);
+      if (!invitation || await emailTaken(invitation.email)) return null;
+      await execute("UPDATE invitations SET accepted_at = ? WHERE id = ?", [now, invitation.id]);
+      return insertUser(
+        {
+          email: invitation.email,
+          name: invitation.name,
+          role: invitation.role,
+          orgId: invitation.orgId,
+          passwordHash,
+          credits: invitation.credits,
+          permissions: invitation.permissions,
+          grantedBy: invitation.invitedBy,
+        },
+        now,
+      );
+    });
 }
 
 /* ── Parola sıfırlama ─────────────────────────────────────────────────── */
 
 /** Kullanıcı için tek kullanımlık sıfırlama anahtarı üretir; önceki kullanılmamış anahtarlar geçersiz olur. */
-export function createPasswordReset(userId: string, createdBy: string, now: number): string {
+export async function createPasswordReset(userId: string, createdBy: string, now: number): Promise<string> {
   const token = newToken();
-  transaction(() => {
-    execute("DELETE FROM password_resets WHERE user_id = ? AND used_at IS NULL", [userId]);
-    execute("INSERT INTO password_resets (token_hash, user_id, created_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?)", [hashToken(token), userId, createdBy, now, now + RESET_TTL_MS]);
-  });
+  await transaction(async () => {
+        await execute("DELETE FROM password_resets WHERE user_id = ? AND used_at IS NULL", [userId]);
+        await execute("INSERT INTO password_resets (token_hash, user_id, created_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?)", [hashToken(token), userId, createdBy, now, now + RESET_TTL_MS]);
+      });
   return token;
 }
 
 /** Geçerli sıfırlama anahtarının kullanıcısı (kimlik ve e-posta); yoksa null. */
-export function getResetTarget(token: string, now: number): { userId: string; email: string } | null {
-  const row = queryOne<{ user_id: string; email: string }>(
-    `SELECT r.user_id, u.email FROM password_resets r JOIN users u ON u.id = r.user_id
+export async function getResetTarget(token: string, now: number): Promise<{ userId: string; email: string } | null> {
+  const row = await queryOne<{ user_id: string; email: string }>(
+      `SELECT r.user_id, u.email FROM password_resets r JOIN users u ON u.id = r.user_id
      WHERE r.token_hash = ? AND r.used_at IS NULL AND r.expires_at > ? AND u.disabled_at IS NULL`,
-    [hashToken(token), now],
-  );
+      [hashToken(token), now],
+    );
   return row ? { userId: row.user_id, email: row.email } : null;
 }
 
-export function markResetUsed(token: string, now: number): void {
-  execute("UPDATE password_resets SET used_at = ? WHERE token_hash = ?", [now, hashToken(token)]);
+export async function markResetUsed(token: string, now: number): Promise<void> {
+  await execute("UPDATE password_resets SET used_at = ? WHERE token_hash = ?", [now, hashToken(token)]);
 }

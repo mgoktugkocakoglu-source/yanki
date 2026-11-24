@@ -67,7 +67,7 @@ function dailyLimitOf(connector: Connector): number | null {
  * taramadan sonrası istenir ve günlük tavandan kalan kadar içerik okunur;
  * aynı gönderiye iki kez para ödenmez.
  */
-function buildRequest(connector: Connector, plan: CollectionPlan, lastRun: CollectionRun | undefined, now: number): CollectRequest {
+async function buildRequest(connector: Connector, plan: CollectionPlan, lastRun: CollectionRun | undefined, now: number): Promise<CollectRequest> {
   const { metered } = connector.descriptor;
   const resumeFrom = metered && lastRun && lastRun.status !== "error" ? lastRun.startedAt - METERED_OVERLAP_MS : null;
   // Arşivden okuyan kaynakta ilk tarama arşivin tamamına bakar; sonrakiler yalnızca son pencereye.
@@ -79,23 +79,23 @@ function buildRequest(connector: Connector, plan: CollectionPlan, lastRun: Colle
     groups: plan.groups,
     language: plan.language,
     since: resumeFrom ?? now - lookback,
-    maxItems: limit === null ? null : Math.max(0, limit - fetchedSince(connector.descriptor.id, bucketStart(now, "day"))),
+    maxItems: limit === null ? null : Math.max(0, limit - await fetchedSince(connector.descriptor.id, bucketStart(now, "day"))),
   };
 }
 
-function saveRun(project: Project, connectorId: string, startedAt: number, outcome: ConnectorOutcome, inserted: number): CollectionRun {
-  return recordRun({
-    workspaceId: project.workspaceId,
-    projectId: project.id,
-    connectorId,
-    startedAt,
-    finishedAt: Date.now(),
-    status: outcome.status,
-    fetched: outcome.fetched,
-    matched: outcome.matched.length,
-    inserted,
-    message: outcome.message,
-  });
+async function saveRun(project: Project, connectorId: string, startedAt: number, outcome: ConnectorOutcome, inserted: number): Promise<CollectionRun> {
+  return await recordRun({
+      workspaceId: project.workspaceId,
+      projectId: project.id,
+      connectorId,
+      startedAt,
+      finishedAt: Date.now(),
+      status: outcome.status,
+      fetched: outcome.fetched,
+      matched: outcome.matched.length,
+      inserted,
+      message: outcome.message,
+    });
 }
 
 function skipped(message: string): ConnectorOutcome {
@@ -108,11 +108,11 @@ export type CollectOutcome =
 
 /** Projenin tüm açık bağlayıcılarını bir kez çalıştırır. */
 export async function collectProject(projectId: string): Promise<CollectOutcome> {
-  const project = getProject(projectId);
+  const project = await getProject(projectId);
   if (!project) return { ok: false, reason: "not-found" };
-  if (getWorkspace(project.workspaceId)?.kind !== "live") return { ok: false, reason: "demo" };
+  if ((await getWorkspace(project.workspaceId))?.kind !== "live") return { ok: false, reason: "demo" };
 
-  const prepared = prepareProject(project, listTopics(project.id));
+  const prepared = prepareProject(project, await listTopics(project.id));
   const plan = buildCollectionPlan(prepared.ast);
   if (!plan) return { ok: false, reason: "no-keywords" };
 
@@ -121,7 +121,7 @@ export async function collectProject(projectId: string): Promise<CollectOutcome>
   active.add(project.id);
 
   try {
-    const lastRuns = new Map(latestRunPerConnector(project.id).map((run) => [run.connectorId, run]));
+    const lastRuns = new Map((await latestRunPerConnector(project.id)).map((run) => [run.connectorId, run]));
     const runs: CollectionRun[] = [];
 
     for (const connectorId of project.connectorIds) {
@@ -130,23 +130,23 @@ export async function collectProject(projectId: string): Promise<CollectOutcome>
       const lastRun = lastRuns.get(connectorId);
 
       if (!connector) {
-        runs.push(saveRun(project, connectorId, startedAt, skipped("Bu bağlayıcı artık mevcut değil."), 0));
+        runs.push(await saveRun(project, connectorId, startedAt, skipped("Bu bağlayıcı artık mevcut değil."), 0));
         continue;
       }
       if (!isConnectorAllowed(connector)) {
-        runs.push(saveRun(project, connectorId, startedAt, skipped("Kurumsal kurulumda kapalı: kaynağın koşulları yalnızca kişisel kullanıma izin veriyor."), 0));
+        runs.push(await saveRun(project, connectorId, startedAt, skipped("Kurumsal kurulumda kapalı: kaynağın koşulları yalnızca kişisel kullanıma izin veriyor."), 0));
         continue;
       }
       if (!connector.isConfigured()) {
-        runs.push(saveRun(project, connectorId, startedAt, skipped(`Anahtar bekleniyor: ${connector.descriptor.requiredSetting}.`), 0));
+        runs.push(await saveRun(project, connectorId, startedAt, skipped(`Anahtar bekleniyor: ${connector.descriptor.requiredSetting}.`), 0));
         continue;
       }
       // Kota koruması: çok sık taranmaması gereken kaynak sessizce atlanır, son sonucu ekranda kalır.
       const minInterval = (connector.descriptor.minIntervalMinutes ?? 0) * 60_000;
       if (lastRun && lastRun.status !== "skipped" && startedAt - lastRun.startedAt < minInterval) continue;
 
-      const outcome = await runConnector(connector, buildRequest(connector, plan, lastRun, startedAt), prepared, startedAt);
-      runs.push(saveRun(project, connectorId, startedAt, outcome, insertMentions(outcome.matched)));
+      const outcome = await runConnector(connector, await buildRequest(connector, plan, lastRun, startedAt), prepared, startedAt);
+      runs.push(await saveRun(project, connectorId, startedAt, outcome, await insertMentions(outcome.matched)));
     }
     return { ok: true, runs, inserted: runs.reduce((sum, run) => sum + run.inserted, 0) };
   } finally {

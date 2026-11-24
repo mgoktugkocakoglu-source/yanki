@@ -4,7 +4,7 @@ import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { composeQuery, plainFromSearch, QUERY_LANGUAGES } from "@/lib/query";
-import { canSeeProject, creditShortage, spendCredits, visibleProjects } from "../auth/access";
+import { loadCanSeeProject, creditShortage, spendCredits, loadVisibleProjects } from "../auth/access";
 import { enterAction } from "../auth/session";
 import { defaultConnectorIds, getConnector, isConnectorUsable } from "../collectors/registry";
 import { rememberWorkspace } from "../context";
@@ -61,30 +61,30 @@ export async function saveProjectAction(_previous: FormState, formData: FormData
   const projectId = String(formData.get("projectId") ?? "");
 
   if (projectId) {
-    const existing = getProject(projectId);
-    if (existing && !canSeeProject(viewer, existing)) return failure("Proje bulunamadı.");
-    if (!existing || getWorkspace(existing.workspaceId)?.kind !== "live") {
+    const existing = await getProject(projectId);
+    if (existing && !(await loadCanSeeProject(viewer, existing))) return failure("Proje bulunamadı.");
+    if (!existing || (await getWorkspace(existing.workspaceId))?.kind !== "live") {
       return failure("Demo projeleri düzenlenemez.");
     }
-    updateProject(projectId, input, now);
-    recordAudit({ actor: viewer?.email, workspaceId: existing.workspaceId, action: "proje.güncellendi", objectType: "proje", objectId: projectId, detail: input.name });
-    after(() => collectProject(projectId));
+    await updateProject(projectId, input, now);
+    await recordAudit({ actor: viewer?.email, workspaceId: existing.workspaceId, action: "proje.güncellendi", objectType: "proje", objectId: projectId, detail: input.name });
+    after(async () => collectProject(projectId));
     redirect(`/proje/${projectId}/kaynaklar?kaydedildi=1`);
   }
 
-  const workspace = getWorkspace(String(formData.get("workspaceId") ?? ""));
+  const workspace = await getWorkspace(String(formData.get("workspaceId") ?? ""));
   if (workspace?.kind !== "live") return failure("Yeni proje yalnızca canlı çalışma alanında açılabilir.");
 
   const shortage = creditShortage(viewer, "search");
   if (shortage) return failure(shortage);
-  const project = createProject(workspace.id, input, now);
-  if (viewer) setProjectOwner(project.id, viewer.id);
-  spendCredits(viewer, "search", project.id, now);
-  recordAudit({ actor: viewer?.email, workspaceId: workspace.id, action: "proje.oluşturuldu", objectType: "proje", objectId: project.id, detail: project.name });
+  const project = await createProject(workspace.id, input, now);
+  if (viewer) await setProjectOwner(project.id, viewer.id);
+  await spendCredits(viewer, "search", project.id, now);
+  await recordAudit({ actor: viewer?.email, workspaceId: workspace.id, action: "proje.oluşturuldu", objectType: "proje", objectId: project.id, detail: project.name });
   // Proje canlı alanda açıldı; çalışma alanı sayfaları da artık o alanı göstersin.
   await rememberWorkspace(workspace.id);
   // İlk tarama yanıtı bekletmesin; kaynaklar ekranı durumu gösterir.
-  after(() => collectProject(project.id));
+  after(async () => collectProject(project.id));
   redirect(`/proje/${project.id}/kaynaklar?yeni=1`);
 }
 
@@ -108,7 +108,7 @@ export async function quickSearchAction(_previous: FormState, formData: FormData
   const query = validateQuery(fullQuery);
   if (!query.ok) return failure("Arama tanımı geçerli değil.", { query: query.message });
 
-  const workspace = getWorkspaceByKind("live");
+  const workspace = await getWorkspaceByKind("live");
   if (!workspace) return failure("Canlı çalışma alanı bulunamadı.");
 
   // Platform seçimi isteğe bağlıdır; form göndermediyse kullanılabilir tüm kaynaklar taranır.
@@ -116,17 +116,17 @@ export async function quickSearchAction(_previous: FormState, formData: FormData
   const connectorIds = formData.has("platformsShown") ? formData.getAll("connectorIds").map(String).filter((id) => usable.includes(id)) : usable;
   if (connectorIds.length === 0) return failure("En az bir platform seçin.", { connectorIds: "En az bir platform seçin." });
 
-  let project = visibleProjects(viewer, listProjects(workspace.id)).find((entry) => entry.query === fullQuery) ?? null;
+  let project = (await loadVisibleProjects(viewer, await listProjects(workspace.id))).find((entry) => entry.query === fullQuery) ?? null;
   if (project && project.connectorIds.join() !== connectorIds.join()) {
-    updateProject(project.id, { name: project.name, description: project.description, query: project.query, connectorIds }, Date.now());
+    await updateProject(project.id, { name: project.name, description: project.description, query: project.query, connectorIds }, Date.now());
   }
   if (!project) {
     const shortage = creditShortage(viewer, "search");
     if (shortage) return failure(shortage);
-    project = createProject(workspace.id, { name: text.slice(0, 80), description: "", query: fullQuery, connectorIds }, Date.now());
-    if (viewer) setProjectOwner(project.id, viewer.id);
-    spendCredits(viewer, "search", project.id, Date.now());
-    recordAudit({ actor: viewer?.email, workspaceId: workspace.id, action: "arama.yapıldı", objectType: "proje", objectId: project.id, detail: text });
+    project = await createProject(workspace.id, { name: text.slice(0, 80), description: "", query: fullQuery, connectorIds }, Date.now());
+    if (viewer) await setProjectOwner(project.id, viewer.id);
+    await spendCredits(viewer, "search", project.id, Date.now());
+    await recordAudit({ actor: viewer?.email, workspaceId: workspace.id, action: "arama.yapıldı", objectType: "proje", objectId: project.id, detail: text });
   }
   await rememberWorkspace(workspace.id);
   await collectProject(project.id);
@@ -135,9 +135,9 @@ export async function quickSearchAction(_previous: FormState, formData: FormData
 
 export async function deleteProjectAction(formData: FormData): Promise<void> {
   const { viewer, project } = await authorize(String(formData.get("projectId") ?? ""));
-  if (!project || getWorkspace(project.workspaceId)?.kind !== "live") return;
-  deleteProject(project.id);
-  recordAudit({ actor: viewer?.email, workspaceId: project.workspaceId, action: "proje.silindi", objectType: "proje", objectId: project.id, detail: project.name });
+  if (!project || (await getWorkspace(project.workspaceId))?.kind !== "live") return;
+  await deleteProject(project.id);
+  await recordAudit({ actor: viewer?.email, workspaceId: project.workspaceId, action: "proje.silindi", objectType: "proje", objectId: project.id, detail: project.name });
   redirect("/projeler");
 }
 

@@ -56,16 +56,16 @@ export async function saveTopicsAction(_previous: FormState, formData: FormData)
   const parsed = parseTopicLines(String(formData.get("topics") ?? ""));
   if ("error" in parsed) return failure(parsed.error, { topics: parsed.error });
 
-  replaceTopics(project.id, parsed.topics);
-  const tagged = retagProject(project.id);
-  recordAudit({
-    actor: viewer?.email,
-    workspaceId: project.workspaceId,
-    action: "konular.güncellendi",
-    objectType: "proje",
-    objectId: project.id,
-    detail: `${parsed.topics.length} konu, ${tagged} etiket`,
-  });
+  await replaceTopics(project.id, parsed.topics);
+  const tagged = await retagProject(project.id);
+  await recordAudit({
+        actor: viewer?.email,
+        workspaceId: project.workspaceId,
+        action: "konular.güncellendi",
+        objectType: "proje",
+        objectId: project.id,
+        detail: `${parsed.topics.length} konu, ${tagged} etiket`,
+      });
   refresh();
   return { ok: true, message: `${parsed.topics.length} konu kaydedildi; mevcut içerikler yeniden etiketlendi.`, errors: {} };
 }

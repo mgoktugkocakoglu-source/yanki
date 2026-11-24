@@ -18,17 +18,17 @@ export async function scanClaimsAction(_previous: FormState, formData: FormData)
   if (shortage) return failure(shortage);
   const outcome = await scanClaims(project, rangeKey, Date.now());
   if (!outcome.ok) return failure(outcome.message);
-  spendCredits(viewer, "claims", project.id, Date.now());
+  await spendCredits(viewer, "claims", project.id, Date.now());
 
   const matched = outcome.run.claims.filter((claim) => claim.checks.length > 0).length;
-  recordAudit({
-    actor: viewer?.email,
-    workspaceId: project.workspaceId,
-    action: "yapayzeka.iddia",
-    objectType: "proje",
-    objectId: project.id,
-    detail: `${outcome.run.mentionsSent} içerik ${outcome.run.model} modeline gönderildi; ${outcome.run.claims.length} iddia, ${matched} tanesinde yayımlanmış doğrulama`,
-  });
+  await recordAudit({
+        actor: viewer?.email,
+        workspaceId: project.workspaceId,
+        action: "yapayzeka.iddia",
+        objectType: "proje",
+        objectId: project.id,
+        detail: `${outcome.run.mentionsSent} içerik ${outcome.run.model} modeline gönderildi; ${outcome.run.claims.length} iddia, ${matched} tanesinde yayımlanmış doğrulama`,
+      });
   refresh();
   return { ok: true, message: `${outcome.run.claims.length} iddia bulundu.`, errors: {} };
 }

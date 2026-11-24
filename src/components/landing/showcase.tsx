@@ -32,21 +32,21 @@ import { getOverview } from "@/server/services/overview";
  */
 export const loadShowcase = cache(async () => {
   const now = await requestStart();
-  const workspaces = listWorkspaces();
+  const workspaces = await listWorkspaces();
   const workspace = workspaces.find((entry) => entry.kind === "live");
   if (!workspace) return null;
 
-  const owners = listProjectOwners();
+  const owners = await listProjectOwners();
   const range = resolveRange(DEFAULT_RANGE, now);
-  const projects = listProjects(workspace.id).filter((entry) => !owners.has(entry.id));
-  const ranked = projects
-    .map((entry) => ({ entry, total: summarize({ projectId: entry.id, range }).total }))
+  const projects = (await listProjects(workspace.id)).filter((entry) => !owners.has(entry.id));
+  const ranked = (await Promise.all(projects
+      .map(async (entry) => ({ entry, total: (await summarize({ projectId: entry.id, range })).total }))))
     .filter((candidate) => candidate.total > 0)
     .sort((a, b) => b.total - a.total);
   const project = ranked[0]?.entry;
   if (!project) return null;
 
-  const overview = getOverview(project, DEFAULT_RANGE, now);
+  const overview = await getOverview(project, DEFAULT_RANGE, now);
   const parsed = tryParseQuery(project.query);
   return {
     now,
@@ -56,7 +56,7 @@ export const loadShowcase = cache(async () => {
     projects,
     overview,
     queries: parsed.ok ? [parsed.ast] : [],
-    topicNames: new Map(listTopics(project.id).map((topic) => [topic.id, topic.name])),
+    topicNames: new Map((await listTopics(project.id)).map((topic) => [topic.id, topic.name])),
   };
 });
 
@@ -115,9 +115,9 @@ export async function SolutionPreview({ kind }: { demo: SolutionDemo; kind: Solu
   const { project, projects, workspaces, overview, queries, topicNames, now } = showcase;
   const listHref = projectHref(project.id, "bahsetmeler");
 
-  return <PreviewFrame title={kind === "compare" || kind === "workspaces" ? showcase.workspace.name : project.name}>{body()}</PreviewFrame>;
+  return <PreviewFrame title={kind === "compare" || kind === "workspaces" ? showcase.workspace.name : project.name}>{await body()}</PreviewFrame>;
 
-  function body(): ReactNode {
+  async function body(): Promise<ReactNode> {
     switch (kind) {
       case "alerts": {
         if (overview.explained.length === 0) {
@@ -144,11 +144,11 @@ export async function SolutionPreview({ kind }: { demo: SolutionDemo; kind: Solu
         );
       case "compare": {
         const range = resolveRange(DEFAULT_RANGE, now);
-        const rows = projects
-          .map((entry) => {
-            const summary = summarize({ projectId: entry.id, range });
-            return { key: entry.id, label: entry.name, total: summary.total, positive: summary.positive, negative: summary.negative, neutral: summary.neutral, href: projectHref(entry.id) };
-          })
+        const rows = (await Promise.all(projects
+                  .map(async (entry) => {
+                    const summary = await summarize({ projectId: entry.id, range });
+                    return { key: entry.id, label: entry.name, total: summary.total, positive: summary.positive, negative: summary.negative, neutral: summary.neutral, href: projectHref(entry.id) };
+                  })))
           .sort((a, b) => b.total - a.total);
         return (
           <PreviewCard title="Projelere göre hacim ve ton" aside={<ToneLegend />}>
@@ -232,17 +232,17 @@ export async function SolutionPreview({ kind }: { demo: SolutionDemo; kind: Solu
         return (
           <PreviewCard title="Çalışma alanları">
             <ul className="flex flex-col divide-y divide-line">
-              {workspaces.map((workspace) => {
-                const names = listProjects(workspace.id).map((entry) => entry.name);
-                return (
-                  <li key={workspace.id} className="py-2.5 first:pt-0 last:pb-0">
-                    <p className="font-medium">{workspace.name}</p>
-                    <p className="text-[0.8125rem] text-ink-muted">
-                      {names.length > 0 ? `${formatNumber(names.length)} proje: ${names.join(", ")}` : "henüz proje yok"}
-                    </p>
-                  </li>
-                );
-              })}
+              {(await Promise.all(workspaces.map(async (workspace) => {
+                                    const names = (await listProjects(workspace.id)).map((entry) => entry.name);
+                                    return (
+                                      <li key={workspace.id} className="py-2.5 first:pt-0 last:pb-0">
+                                        <p className="font-medium">{workspace.name}</p>
+                                        <p className="text-[0.8125rem] text-ink-muted">
+                                          {names.length > 0 ? `${formatNumber(names.length)} proje: ${names.join(", ")}` : "henüz proje yok"}
+                                        </p>
+                                      </li>
+                                    );
+                                  })))}
             </ul>
             <p className="mt-3 text-[0.8125rem] text-ink-muted">
               Yeni proje yalnızca canlı çalışma alanında açılır:{" "}

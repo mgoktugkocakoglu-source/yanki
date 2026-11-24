@@ -206,7 +206,8 @@ CREATE TABLE organization_ledger (
   reason      TEXT NOT NULL,
   actor       TEXT NOT NULL,
   user_id     TEXT,
-  created_at  BIGINT NOT NULL
+  created_at  BIGINT NOT NULL,
+  seq         BIGINT GENERATED ALWAYS AS IDENTITY
   );
 
 CREATE TABLE users (
@@ -238,7 +239,8 @@ CREATE TABLE credit_ledger (
   delta       BIGINT NOT NULL,
   reason      TEXT NOT NULL,
   object_id   TEXT,
-  created_at  BIGINT NOT NULL
+  created_at  BIGINT NOT NULL,
+  seq         BIGINT GENERATED ALWAYS AS IDENTITY
   );
 
 CREATE TABLE project_owners (

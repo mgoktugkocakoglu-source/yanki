@@ -7,7 +7,7 @@ import { BUTTON_SECONDARY, PageContainer, PageHeading, Panel } from "@/component
 import { formatNumber, formatRelative } from "@/lib/format";
 import { projectHref } from "@/lib/links";
 import { resolveRange } from "@/lib/time";
-import { visibleProjects } from "@/server/auth/access";
+import { loadVisibleProjects } from "@/server/auth/access";
 import { requireUser } from "@/server/auth/session";
 import { requestStart } from "@/server/context";
 import { latestCollectedAt } from "@/server/repositories/mentions";
@@ -22,8 +22,8 @@ export const metadata: Metadata = { title: "Arama" };
 export default async function SearchPage() {
   const now = await requestStart();
   const viewer = await requireUser();
-  const workspace = getWorkspaceByKind("live");
-  const projects = workspace ? visibleProjects(viewer, listProjects(workspace.id)) : [];
+  const workspace = await getWorkspaceByKind("live");
+  const projects = workspace ? (await loadVisibleProjects(viewer, await listProjects(workspace.id))) : [];
   const lastWeek = resolveRange("7g", now);
   const platforms = connectorOptions().map((option) => ({
     id: option.id,
@@ -66,28 +66,28 @@ export default async function SearchPage() {
             <p className="rounded-xl border border-line bg-surface p-4 text-ink-soft">Henüz izlenen konu yok. Yukarıdan ilk aramanızı yapın.</p>
           ) : (
             <ul className="grid gap-4 lg:grid-cols-2">
-              {projects.map((project) => {
-                const week = summarize({ projectId: project.id, range: lastWeek });
-                const collectedAt = latestCollectedAt(project.id);
-                return (
-                  <li key={project.id}>
-                    <Link href={projectHref(project.id)} className="group block h-full rounded-xl border border-line bg-surface p-5 shadow-[var(--shadow-card)] transition-colors hover:border-brand">
-                      <div className="flex items-baseline justify-between gap-4">
-                        <h3 className="text-[1.0625rem] font-semibold group-hover:text-brand-strong">{project.name}</h3>
-                        <span className="shrink-0 text-right text-[0.8125rem] text-ink-muted">
-                          <span className="reading block text-[1.0625rem] font-medium text-ink">{formatNumber(week.total)}</span>
-                          son 7 gün
-                        </span>
-                      </div>
-                      {project.description ? <p className="mt-1 text-ink-soft">{project.description}</p> : null}
-                      <QuerySummary query={project.query} className="mt-3" />
-                      <p className="mt-3 text-[0.8125rem] text-ink-muted">
-                        {collectedAt ? `Son içerik ${formatRelative(collectedAt, now)} toplandı` : "Henüz içerik toplanmadı; ilk tarama sürüyor olabilir"}
-                      </p>
-                    </Link>
-                  </li>
-                );
-              })}
+              {(await Promise.all(projects.map(async (project) => {
+                                              const week = await summarize({ projectId: project.id, range: lastWeek });
+                                              const collectedAt = await latestCollectedAt(project.id);
+                                              return (
+                                                <li key={project.id}>
+                                                  <Link href={projectHref(project.id)} className="group block h-full rounded-xl border border-line bg-surface p-5 shadow-[var(--shadow-card)] transition-colors hover:border-brand">
+                                                    <div className="flex items-baseline justify-between gap-4">
+                                                      <h3 className="text-[1.0625rem] font-semibold group-hover:text-brand-strong">{project.name}</h3>
+                                                      <span className="shrink-0 text-right text-[0.8125rem] text-ink-muted">
+                                                        <span className="reading block text-[1.0625rem] font-medium text-ink">{formatNumber(week.total)}</span>
+                                                        son 7 gün
+                                                      </span>
+                                                    </div>
+                                                    {project.description ? <p className="mt-1 text-ink-soft">{project.description}</p> : null}
+                                                    <QuerySummary query={project.query} className="mt-3" />
+                                                    <p className="mt-3 text-[0.8125rem] text-ink-muted">
+                                                      {collectedAt ? `Son içerik ${formatRelative(collectedAt, now)} toplandı` : "Henüz içerik toplanmadı; ilk tarama sürüyor olabilir"}
+                                                    </p>
+                                                  </Link>
+                                                </li>
+                                              );
+                                            })))}
             </ul>
           )}
         </section>

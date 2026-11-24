@@ -17,8 +17,8 @@ export const metadata: Metadata = { title: "Dönem raporu", robots: { index: fal
 async function SharedReport({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const now = await requestStart();
-  const shareRecord = getActiveShare(token);
-  const project = shareRecord ? getProject(shareRecord.projectId) : null;
+  const shareRecord = await getActiveShare(token);
+  const project = shareRecord ? await getProject(shareRecord.projectId) : null;
   if (!shareRecord || !project) notFound();
 
   return (

@@ -10,34 +10,34 @@ import { authorize } from "./shared";
 
 export async function setToneAction(mentionId: string, sentiment: Sentiment | null): Promise<void> {
   if (sentiment !== null && !SENTIMENTS.includes(sentiment)) return;
-  const mention = getMention(mentionId);
+  const mention = await getMention(mentionId);
   if (!mention) return;
   const { viewer, project: allowed } = await authorize(mention.projectId);
   if (!allowed) return;
-  setSentimentOverride(mentionId, sentiment);
-  recordAudit({
-    actor: viewer?.email,
-    workspaceId: mention.workspaceId,
-    action: "ton.düzeltildi",
-    objectType: "bahsetme",
-    objectId: mentionId,
-    detail: sentiment ? `${mention.sentiment} → ${sentiment}` : "düzeltme geri alındı",
-  });
+  await setSentimentOverride(mentionId, sentiment);
+  await recordAudit({
+        actor: viewer?.email,
+        workspaceId: mention.workspaceId,
+        action: "ton.düzeltildi",
+        objectType: "bahsetme",
+        objectId: mentionId,
+        detail: sentiment ? `${mention.sentiment} → ${sentiment}` : "düzeltme geri alındı",
+      });
   refresh();
 }
 
 export async function setIrrelevantAction(mentionId: string, isIrrelevant: boolean): Promise<void> {
-  const mention = getMention(mentionId);
+  const mention = await getMention(mentionId);
   if (!mention) return;
   const { viewer, project: allowed } = await authorize(mention.projectId);
   if (!allowed) return;
-  setIrrelevant(mentionId, isIrrelevant);
-  recordAudit({
-    actor: viewer?.email,
-    workspaceId: mention.workspaceId,
-    action: isIrrelevant ? "ilgisiz.işaretlendi" : "ilgisiz.geri-alındı",
-    objectType: "bahsetme",
-    objectId: mentionId,
-  });
+  await setIrrelevant(mentionId, isIrrelevant);
+  await recordAudit({
+        actor: viewer?.email,
+        workspaceId: mention.workspaceId,
+        action: isIrrelevant ? "ilgisiz.işaretlendi" : "ilgisiz.geri-alındı",
+        objectType: "bahsetme",
+        objectId: mentionId,
+      });
   refresh();
 }

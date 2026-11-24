@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
-import { tokenize } from "@/lib/text/normalize";
-import { stablePrefix } from "@/lib/text/turkish";
+import { groupProbes, probeConditions } from "@/lib/query";
 import { execute, queryAll, queryOne, transaction, type SqlParams } from "../db/client";
 import { SEED_FEEDS } from "../news/sources";
 
@@ -88,46 +87,46 @@ export interface NewFeed {
 }
 
 /** Akışı ekler; aynı adres zaten varsa dokunmaz ve false döner. */
-export function addFeed(feed: NewFeed, now: number): boolean {
+export async function addFeed(feed: NewFeed, now: number): Promise<boolean> {
   return (
-    execute("INSERT OR IGNORE INTO news_feeds (id, outlet, domain, url, kind, language, origin, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
-      feedId(feed.url),
-      feed.outlet,
-      feed.domain,
-      feed.url,
-      feed.kind,
-      feed.language,
-      feed.origin,
-      now,
-    ]) > 0
+    await execute("INSERT INTO news_feeds (id, outlet, domain, url, kind, language, origin, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING", [
+            feedId(feed.url),
+            feed.outlet,
+            feed.domain,
+            feed.url,
+            feed.kind,
+            feed.language,
+            feed.origin,
+            now,
+          ]) > 0
   );
 }
 
 /** Başlangıç listesindeki eksik akışları ekler. Kapatılmış ya da elle eklenmiş akışlara dokunmaz. */
-export function seedFeeds(now: number): void {
-  transaction(() => {
-    for (const seed of SEED_FEEDS) {
-      addFeed({ outlet: seed.outlet, domain: seed.domain, url: seed.url, kind: "rss", language: seed.language ?? "tr", origin: "seed" }, now);
-    }
-  });
+export async function seedFeeds(now: number): Promise<void> {
+  await transaction(async () => {
+        for (const seed of SEED_FEEDS) {
+          await addFeed({ outlet: seed.outlet, domain: seed.domain, url: seed.url, kind: "rss", language: seed.language ?? "tr", origin: "seed" }, now);
+        }
+      });
 }
 
-export function listFeeds(): NewsFeed[] {
-  return queryAll<FeedRow>("SELECT * FROM news_feeds ORDER BY outlet COLLATE NOCASE, url").map(toFeed);
+export async function listFeeds(): Promise<NewsFeed[]> {
+  return (await queryAll<FeedRow>("SELECT * FROM news_feeds ORDER BY lower(outlet), url")).map(toFeed);
 }
 
-export function getFeed(id: string): NewsFeed | null {
-  const row = queryOne<FeedRow>("SELECT * FROM news_feeds WHERE id = ?", [id]);
+export async function getFeed(id: string): Promise<NewsFeed | null> {
+  const row = await queryOne<FeedRow>("SELECT * FROM news_feeds WHERE id = ?", [id]);
   return row ? toFeed(row) : null;
 }
 
 /** Tarama sırası gelmiş açık akışlar; en uzun süredir taranmayan önce. */
-export function listDueFeeds(now: number): NewsFeed[] {
-  return queryAll<FeedRow>("SELECT * FROM news_feeds WHERE enabled = 1 AND next_due_at <= ? ORDER BY COALESCE(last_fetched_at, 0)", [now]).map(toFeed);
+export async function listDueFeeds(now: number): Promise<NewsFeed[]> {
+  return (await queryAll<FeedRow>("SELECT * FROM news_feeds WHERE enabled = 1 AND next_due_at <= ? ORDER BY COALESCE(last_fetched_at, 0)", [now])).map(toFeed);
 }
 
-export function setFeedEnabled(id: string, enabled: boolean): void {
-  execute("UPDATE news_feeds SET enabled = ?, next_due_at = 0 WHERE id = ?", [enabled ? 1 : 0, id]);
+export async function setFeedEnabled(id: string, enabled: boolean): Promise<void> {
+  await execute("UPDATE news_feeds SET enabled = ?, next_due_at = 0 WHERE id = ?", [enabled ? 1 : 0, id]);
 }
 
 export interface FeedResult {
@@ -139,39 +138,39 @@ export interface FeedResult {
   nextDueAt: number;
 }
 
-export function recordFeedResult(feed: NewsFeed, result: FeedResult, now: number): void {
+export async function recordFeedResult(feed: NewsFeed, result: FeedResult, now: number): Promise<void> {
   const succeeded = result.status === "ok" || result.status === "unchanged";
-  execute(
-    `UPDATE news_feeds SET last_fetched_at = ?, last_ok_at = ?, last_status = ?, last_error = ?, last_item_count = ?,
+  await execute(
+        `UPDATE news_feeds SET last_fetched_at = ?, last_ok_at = ?, last_status = ?, last_error = ?, last_item_count = ?,
        failures = ?, etag = ?, last_modified = ?, next_due_at = ? WHERE id = ?`,
-    [
-      now,
-      succeeded ? now : feed.lastOkAt,
-      result.status,
-      result.error,
-      result.status === "ok" ? result.itemCount : feed.lastItemCount,
-      result.status === "error" ? feed.failures + 1 : 0,
-      result.etag,
-      result.lastModified,
-      result.nextDueAt,
-      feed.id,
-    ],
-  );
+        [
+          now,
+          succeeded ? now : feed.lastOkAt,
+          result.status,
+          result.error,
+          result.status === "ok" ? result.itemCount : feed.lastItemCount,
+          result.status === "error" ? feed.failures + 1 : 0,
+          result.etag,
+          result.lastModified,
+          result.nextDueAt,
+          feed.id,
+        ],
+      );
 }
 
 /* ── robots.txt ───────────────────────────────────────────────────────── */
 
-export function getRobots(host: string): { body: string; fetchedAt: number } | null {
-  const row = queryOne<{ body: string; fetched_at: number }>("SELECT body, fetched_at FROM news_robots WHERE host = ?", [host]);
+export async function getRobots(host: string): Promise<{ body: string; fetchedAt: number } | null> {
+  const row = await queryOne<{ body: string; fetched_at: number }>("SELECT body, fetched_at FROM news_robots WHERE host = ?", [host]);
   return row ? { body: row.body, fetchedAt: row.fetched_at } : null;
 }
 
-export function saveRobots(host: string, body: string, now: number): void {
-  execute("INSERT INTO news_robots (host, body, fetched_at) VALUES (?, ?, ?) ON CONFLICT (host) DO UPDATE SET body = excluded.body, fetched_at = excluded.fetched_at", [
-    host,
-    body,
-    now,
-  ]);
+export async function saveRobots(host: string, body: string, now: number): Promise<void> {
+  await execute("INSERT INTO news_robots (host, body, fetched_at) VALUES (?, ?, ?) ON CONFLICT (host) DO UPDATE SET body = excluded.body, fetched_at = excluded.fetched_at", [
+        host,
+        body,
+        now,
+      ]);
 }
 
 /* ── Arşiv ────────────────────────────────────────────────────────────── */
@@ -201,33 +200,23 @@ export interface NewsArticle {
 }
 
 /** Yeni başlıkları ekler; adresi arşivde olanlar atlanır. Eklenen sayısını döndürür. */
-export function insertArticles(articles: NewArticle[], now: number): number {
+export async function insertArticles(articles: NewArticle[], now: number): Promise<number> {
   if (articles.length === 0) return 0;
-  return transaction(() => {
-    let inserted = 0;
-    for (const article of articles) {
-      inserted += execute(
-        `INSERT OR IGNORE INTO news_articles (feed_id, outlet, domain, url, external_id, title, summary, search_text, language, published_at, first_seen_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [article.feedId, article.outlet, article.domain, article.url, article.externalId, article.title, article.summary, article.searchText, article.language, article.publishedAt, now],
-      );
-    }
-    return inserted;
-  });
+  return await transaction(async () => {
+      let inserted = 0;
+      for (const article of articles) {
+        inserted += await execute(
+                `INSERT INTO news_articles (feed_id, outlet, domain, url, external_id, title, summary, search_text, language, published_at, first_seen_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
+                [article.feedId, article.outlet, article.domain, article.url, article.externalId, article.title, article.summary, article.searchText, article.language, article.publishedAt, now],
+              );
+      }
+      return inserted;
+    });
 }
 
-export function pruneArticles(before: number): number {
-  return execute("DELETE FROM news_articles WHERE published_at < ?", [before]);
-}
-
-function escapeLike(text: string): string {
-  return text.replace(/[\\%_]/g, "\\$&");
-}
-
-/** İfadenin arşivde aranacak kaba parçası: en uzun kelimesinin çekimde değişmeyen başı. */
-function needleOf(keyword: string): string | null {
-  const longest = tokenize(keyword).sort((a, b) => b.length - a.length)[0];
-  return longest ? stablePrefix(longest) : null;
+export async function pruneArticles(before: number): Promise<number> {
+  return await execute("DELETE FROM news_articles WHERE published_at < ?", [before]);
 }
 
 const MAX_CANDIDATES = 20_000;
@@ -237,21 +226,17 @@ const MAX_CANDIDATES = 20_000;
  * gruptan en az bir ifadenin kaba parçası metinde geçmelidir. Sonuç bir üst
  * kümedir; kesin eşleşmeyi çağıran taraf sorgu eşleştiricisiyle yapar.
  */
-export function findCandidateArticles(groups: readonly string[][], since: number): NewsArticle[] {
+export async function findCandidateArticles(groups: readonly string[][], since: number): Promise<NewsArticle[]> {
   const conditions = ["published_at >= ?"];
   const params: SqlParams = [since];
-  for (const group of groups) {
-    const needles = [...new Set(group.map(needleOf))];
-    // Kaba parçası çıkarılamayan ifade varsa bu grup arşivi daraltamaz.
-    if (needles.length === 0 || needles.includes(null)) continue;
-    conditions.push(`(${needles.map(() => "search_text LIKE ? ESCAPE '\\'").join(" OR ")})`);
-    params.push(...needles.map((needle) => `%${escapeLike(needle as string)}%`));
-  }
-  return queryAll<{ outlet: string; domain: string; url: string; external_id: string; title: string; summary: string; language: string; published_at: number }>(
-    `SELECT outlet, domain, url, external_id, title, summary, language, published_at FROM news_articles
+  const probes = probeConditions("search_text", groupProbes(groups));
+  conditions.push(...probes.conditions);
+  params.push(...probes.params);
+  return (await queryAll<{ outlet: string; domain: string; url: string; external_id: string; title: string; summary: string; language: string; published_at: number }>(
+      `SELECT outlet, domain, url, external_id, title, summary, language, published_at FROM news_articles
      WHERE ${conditions.join(" AND ")} ORDER BY published_at DESC LIMIT ${MAX_CANDIDATES}`,
-    params,
-  ).map((row) => ({
+      params,
+    )).map((row) => ({
     outlet: row.outlet,
     domain: row.domain,
     url: row.url,
@@ -276,17 +261,17 @@ export interface ArchiveStats {
 }
 
 /** Arşivin gerçek ölçüleri; `since` anından sonra eklenen başlık sayısıyla birlikte. */
-export function archiveStats(since: number): ArchiveStats {
-  const articles = queryOne<{ total: number; outlets: number; oldest: number | null; added: number }>(
-    "SELECT COUNT(*) AS total, COUNT(DISTINCT domain) AS outlets, MIN(published_at) AS oldest, COALESCE(SUM(first_seen_at >= ?), 0) AS added FROM news_articles",
-    [since],
-  );
-  const feeds = queryOne<{ total: number; active: number; failing: number; blocked: number; last: number | null }>(
-    `SELECT COUNT(*) AS total, COALESCE(SUM(enabled = 1), 0) AS active,
-            COALESCE(SUM(enabled = 1 AND last_status = 'error'), 0) AS failing,
-            COALESCE(SUM(enabled = 1 AND last_status = 'robots'), 0) AS blocked,
+export async function archiveStats(since: number): Promise<ArchiveStats> {
+  const articles = await queryOne<{ total: number; outlets: number; oldest: number | null; added: number }>(
+      "SELECT COUNT(*) AS total, COUNT(DISTINCT domain) AS outlets, MIN(published_at) AS oldest, COUNT(*) FILTER (WHERE first_seen_at >= ?) AS added FROM news_articles",
+      [since],
+    );
+  const feeds = await queryOne<{ total: number; active: number; failing: number; blocked: number; last: number | null }>(
+      `SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE enabled = 1) AS active,
+            COUNT(*) FILTER (WHERE enabled = 1 AND last_status = 'error') AS failing,
+            COUNT(*) FILTER (WHERE enabled = 1 AND last_status = 'robots') AS blocked,
             MAX(last_fetched_at) AS last FROM news_feeds`,
-  );
+    );
   return {
     articles: articles?.total ?? 0,
     outlets: articles?.outlets ?? 0,
@@ -301,6 +286,6 @@ export function archiveStats(since: number): ArchiveStats {
 }
 
 /** Akış başına arşivdeki başlık sayısı. */
-export function articleCountsByFeed(): Map<string, number> {
-  return new Map(queryAll<{ feed_id: string; total: number }>("SELECT feed_id, COUNT(*) AS total FROM news_articles GROUP BY feed_id").map((row) => [row.feed_id, row.total]));
+export async function articleCountsByFeed(): Promise<Map<string, number>> {
+  return new Map((await queryAll<{ feed_id: string; total: number }>("SELECT feed_id, COUNT(*) AS total FROM news_articles GROUP BY feed_id")).map((row) => [row.feed_id, row.total]));
 }

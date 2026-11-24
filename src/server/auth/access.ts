@@ -103,7 +103,7 @@ export function parseDomains(text: string): { domains: string[]; invalid: string
  * başka kurumun konusunu hiçbir kurum yöneticisi göremez. Sistem yöneticisi
  * hepsini görür.
  */
-export function visibleProjects(viewer: Viewer, projects: Project[], owners: ReadonlyMap<string, ProjectOwner> = listProjectOwners()): Project[] {
+export function visibleProjects(viewer: Viewer, projects: Project[], owners: ReadonlyMap<string, ProjectOwner>): Project[] {
   if (viewer === null || isSysadmin(viewer)) return projects;
   const wholeOrg = can(viewer, "projects.viewAll");
   return projects.filter((project) => {
@@ -113,8 +113,19 @@ export function visibleProjects(viewer: Viewer, projects: Project[], owners: Rea
   });
 }
 
-export function canSeeProject(viewer: Viewer, project: Project, owners: ReadonlyMap<string, ProjectOwner> = listProjectOwners()): boolean {
+export function canSeeProject(viewer: Viewer, project: Project, owners: ReadonlyMap<string, ProjectOwner>): boolean {
   return visibleProjects(viewer, [project], owners).length === 1;
+}
+
+/** `visibleProjects`, konu sahiplerini veritabanından yükleyerek. */
+export async function loadVisibleProjects(viewer: Viewer, projects: Project[]): Promise<Project[]> {
+  if (viewer === null || isSysadmin(viewer)) return projects;
+  return visibleProjects(viewer, projects, await listProjectOwners());
+}
+
+/** `canSeeProject`, konu sahiplerini veritabanından yükleyerek. */
+export async function loadCanSeeProject(viewer: Viewer, project: Project): Promise<boolean> {
+  return (await loadVisibleProjects(viewer, [project])).length === 1;
 }
 
 /* ── Krediler ─────────────────────────────────────────────────────────── */
@@ -131,7 +142,7 @@ export function creditShortage(viewer: Viewer, action: CreditAction): string | n
 }
 
 /** İşlem başarıyla bittikten sonra krediyi düşer. Düşülemezse (eşzamanlı harcama) false döner. */
-export function spendCredits(viewer: Viewer, action: CreditAction, objectId: string | null, now: number): boolean {
+export async function spendCredits(viewer: Viewer, action: CreditAction, objectId: string | null, now: number): Promise<boolean> {
   if (isUnmetered(viewer)) return true;
-  return adjustCredits(viewer!.id, -CREDIT_COSTS[action], CREDIT_LABELS[action], objectId, now);
+  return await adjustCredits(viewer!.id, -CREDIT_COSTS[action], CREDIT_LABELS[action], objectId, now);
 }

@@ -18,9 +18,9 @@ const FIRST_RUN_DELAY_MS = 20_000;
 const NEWS_FIRST_RUN_DELAY_MS = 5_000;
 
 async function collectAllLiveProjects(): Promise<void> {
-  const workspace = getWorkspaceByKind("live");
+  const workspace = await getWorkspaceByKind("live");
   if (!workspace) return;
-  for (const project of listProjects(workspace.id)) {
+  for (const project of await listProjects(workspace.id)) {
     try {
       await collectProject(project.id);
     } catch (error) {

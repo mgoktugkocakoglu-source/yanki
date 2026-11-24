@@ -13,8 +13,8 @@ export const metadata: Metadata = { title: "Davet", robots: { index: false, foll
 async function Invitation({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const now = await requestStart();
-  const invitation = getInvitationByToken(token, now);
-  const organization = invitation ? getOrganization(invitation.orgId) : null;
+  const invitation = await getInvitationByToken(token, now);
+  const organization = invitation ? await getOrganization(invitation.orgId) : null;
   if (!invitation || !organization || organization.suspendedAt !== null) return <TokenInvalid kind="davet" />;
 
   return (

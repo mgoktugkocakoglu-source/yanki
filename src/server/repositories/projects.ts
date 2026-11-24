@@ -47,19 +47,19 @@ function toTopic(row: TopicRow): ProjectTopic {
   return { id: row.id, projectId: row.project_id, groupName: row.group_name, name: row.name, query: row.query };
 }
 
-export function listProjects(workspaceId: string): Project[] {
-  return queryAll<ProjectRow>(
-    `SELECT ${PROJECT_COLUMNS} FROM projects WHERE workspace_id = ? ORDER BY created_at`,
-    [workspaceId],
-  ).map(toProject);
+export async function listProjects(workspaceId: string): Promise<Project[]> {
+  return (await queryAll<ProjectRow>(
+      `SELECT ${PROJECT_COLUMNS} FROM projects WHERE workspace_id = ? ORDER BY created_at`,
+      [workspaceId],
+    )).map(toProject);
 }
 
-export function listAllProjects(): Project[] {
-  return queryAll<ProjectRow>(`SELECT ${PROJECT_COLUMNS} FROM projects ORDER BY created_at`).map(toProject);
+export async function listAllProjects(): Promise<Project[]> {
+  return (await queryAll<ProjectRow>(`SELECT ${PROJECT_COLUMNS} FROM projects ORDER BY created_at`)).map(toProject);
 }
 
-export function getProject(id: string): Project | null {
-  const row = queryOne<ProjectRow>(`SELECT ${PROJECT_COLUMNS} FROM projects WHERE id = ?`, [id]);
+export async function getProject(id: string): Promise<Project | null> {
+  const row = await queryOne<ProjectRow>(`SELECT ${PROJECT_COLUMNS} FROM projects WHERE id = ?`, [id]);
   return row ? toProject(row) : null;
 }
 
@@ -71,53 +71,53 @@ export interface ProjectInput {
 }
 
 /** Renk yuvası projeye bir kez atanır ve değişmez: renk sıralamayı değil, projeyi izler. */
-function nextColorSlot(workspaceId: string): number {
-  const row = queryOne<{ count: number }>("SELECT COUNT(*) AS count FROM projects WHERE workspace_id = ?", [workspaceId]);
+async function nextColorSlot(workspaceId: string): Promise<number> {
+  const row = await queryOne<{ count: number }>("SELECT COUNT(*) AS count FROM projects WHERE workspace_id = ?", [workspaceId]);
   return (row?.count ?? 0) % COLOR_SLOT_COUNT;
 }
 
-export function createProject(workspaceId: string, input: ProjectInput, now: number): Project {
+export async function createProject(workspaceId: string, input: ProjectInput, now: number): Promise<Project> {
   const project: Project = {
     id: randomUUID(),
     workspaceId,
     ...input,
-    colorSlot: nextColorSlot(workspaceId),
+    colorSlot: await nextColorSlot(workspaceId),
     createdAt: now,
     updatedAt: now,
   };
-  execute(
-    `INSERT INTO projects (${PROJECT_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      project.id,
-      project.workspaceId,
-      project.name,
-      project.description,
-      project.query,
-      JSON.stringify(project.connectorIds),
-      project.colorSlot,
-      project.createdAt,
-      project.updatedAt,
-    ],
-  );
+  await execute(
+        `INSERT INTO projects (${PROJECT_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          project.id,
+          project.workspaceId,
+          project.name,
+          project.description,
+          project.query,
+          JSON.stringify(project.connectorIds),
+          project.colorSlot,
+          project.createdAt,
+          project.updatedAt,
+        ],
+      );
   return project;
 }
 
-export function updateProject(id: string, input: ProjectInput, now: number): void {
-  execute(
-    "UPDATE projects SET name = ?, description = ?, query = ?, connector_ids = ?, updated_at = ? WHERE id = ?",
-    [input.name, input.description, input.query, JSON.stringify(input.connectorIds), now, id],
-  );
+export async function updateProject(id: string, input: ProjectInput, now: number): Promise<void> {
+  await execute(
+        "UPDATE projects SET name = ?, description = ?, query = ?, connector_ids = ?, updated_at = ? WHERE id = ?",
+        [input.name, input.description, input.query, JSON.stringify(input.connectorIds), now, id],
+      );
 }
 
-export function deleteProject(id: string): void {
-  execute("DELETE FROM projects WHERE id = ?", [id]);
+export async function deleteProject(id: string): Promise<void> {
+  await execute("DELETE FROM projects WHERE id = ?", [id]);
 }
 
-export function listTopics(projectId: string): ProjectTopic[] {
-  return queryAll<TopicRow>(
-    `SELECT ${TOPIC_COLUMNS} FROM project_topics WHERE project_id = ? ORDER BY position`,
-    [projectId],
-  ).map(toTopic);
+export async function listTopics(projectId: string): Promise<ProjectTopic[]> {
+  return (await queryAll<TopicRow>(
+      `SELECT ${TOPIC_COLUMNS} FROM project_topics WHERE project_id = ? ORDER BY position`,
+      [projectId],
+    )).map(toTopic);
 }
 
 export interface TopicInput {
@@ -127,16 +127,16 @@ export interface TopicInput {
 }
 
 /** Projenin konu listesini verilenle değiştirir. Eski eşleşmeler silinir. */
-export function replaceTopics(projectId: string, topics: TopicInput[]): ProjectTopic[] {
-  return transaction(() => {
-    execute("DELETE FROM project_topics WHERE project_id = ?", [projectId]);
-    return topics.map((topic, position) => {
-      const created: ProjectTopic = { id: randomUUID(), projectId, ...topic };
-      execute(
-        "INSERT INTO project_topics (id, project_id, group_name, name, name_folded, query, position) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [created.id, projectId, created.groupName, created.name, foldPhrase(created.name), created.query, position],
-      );
-      return created;
+export async function replaceTopics(projectId: string, topics: TopicInput[]): Promise<ProjectTopic[]> {
+  return await transaction(async () => {
+      await execute("DELETE FROM project_topics WHERE project_id = ?", [projectId]);
+      return (await Promise.all(topics.map(async (topic, position) => {
+            const created: ProjectTopic = { id: randomUUID(), projectId, ...topic };
+            await execute(
+                      "INSERT INTO project_topics (id, project_id, group_name, name, name_folded, query, position) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                      [created.id, projectId, created.groupName, created.name, foldPhrase(created.name), created.query, position],
+                    );
+            return created;
+          })));
     });
-  });
 }

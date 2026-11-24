@@ -19,7 +19,7 @@ export default async function ReportPage({ params, searchParams }: PageProps<"/p
 
   const { project, now } = context;
   const rangeKey = readRange(await searchParams);
-  const shares = listActiveShares(project.id);
+  const shares = await listActiveShares(project.id);
 
   return (
     <PageContainer>

@@ -13,8 +13,8 @@ const SESSION_COOKIE = "yanki_oturum";
 export const LOGIN_PATH = "/giris";
 
 /** En az bir kullanıcı tanımlandıysa panel oturum ister. */
-export function authEnabled(): boolean {
-  return countUsers() > 0;
+export async function authEnabled(): Promise<boolean> {
+  return await countUsers() > 0;
 }
 
 /**
@@ -23,7 +23,7 @@ export function authEnabled(): boolean {
  */
 export async function currentUser(): Promise<User | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  return token ? getSessionUser(token, Date.now()) : null;
+  return token ? await getSessionUser(token, Date.now()) : null;
 }
 
 /**
@@ -31,7 +31,7 @@ export async function currentUser(): Promise<User | null> {
  * ekranına yönlendirir. Giriş zorunlu değilse null döner.
  */
 export async function requireUser(): Promise<Viewer> {
-  if (!authEnabled()) return null;
+  if (!await authEnabled()) return null;
   const user = await currentUser();
   if (!user) redirect(LOGIN_PATH);
   return user;
@@ -63,7 +63,7 @@ export async function currentToken(): Promise<string | null> {
 }
 
 export async function startSession(userId: string): Promise<void> {
-  const token = createSession(userId, Date.now());
+  const token = await createSession(userId, Date.now());
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
@@ -76,7 +76,7 @@ export async function startSession(userId: string): Promise<void> {
 export async function endSession(): Promise<void> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
-  if (token) deleteSession(token);
+  if (token) await deleteSession(token);
   store.delete(SESSION_COOKIE);
 }
 

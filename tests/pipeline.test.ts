@@ -18,33 +18,33 @@ import { listWorkspaces } from "@/server/repositories/workspaces";
 const NOW = Date.parse("2026-11-12T14:30:00+03:00");
 let project: Project;
 
-beforeAll(() => {
-  ensureSeeded(NOW);
-  const demoWorkspace = listWorkspaces().find((workspace) => workspace.kind === "demo")!;
-  project = listProjects(demoWorkspace.id)[0];
+beforeAll(async () => {
+  await ensureSeeded(NOW);
+  const demoWorkspace = (await listWorkspaces()).find((workspace) => workspace.kind === "demo")!;
+  project = (await listProjects(demoWorkspace.id))[0];
 });
 
 describe("tohumlama", () => {
-  it("bir demo ve bir canlı çalışma alanı kurar", () => {
-    expect(listWorkspaces().map((workspace) => workspace.kind).sort()).toEqual(["demo", "live"]);
+  it("bir demo ve bir canlı çalışma alanı kurar", async () => {
+    expect((await listWorkspaces()).map((workspace) => workspace.kind).sort()).toEqual(["demo", "live"]);
   });
 
-  it("yeniden çağrıldığında kayıt çoğaltmaz", () => {
-    const before = countMentions({ projectId: project.id });
-    ensureSeeded(NOW);
-    expect(countMentions({ projectId: project.id })).toBe(before);
+  it("yeniden çağrıldığında kayıt çoğaltmaz", async () => {
+    const before = await countMentions({ projectId: project.id });
+    await ensureSeeded(NOW);
+    expect(await countMentions({ projectId: project.id })).toBe(before);
     expect(before).toBeGreaterThan(800);
   });
 
-  it("gelecek tarihli kayıt üretmez", () => {
-    const [{ latest }] = queryAll<{ latest: number }>("SELECT MAX(published_at) AS latest FROM mentions");
+  it("gelecek tarihli kayıt üretmez", async () => {
+    const [{ latest }] = await queryAll<{ latest: number }>("SELECT MAX(published_at) AS latest FROM mentions");
     expect(latest).toBeLessThan(NOW);
   });
 
-  it("her demo içeriği kendi proje sorgusuyla eşleşir", () => {
-    for (const workspace of listWorkspaces().filter((entry) => entry.kind === "demo")) {
-      for (const demoProject of listProjects(workspace.id)) {
-        expect(countMentions({ projectId: demoProject.id }), demoProject.name).toBeGreaterThan(300);
+  it("her demo içeriği kendi proje sorgusuyla eşleşir", async () => {
+    for (const workspace of (await listWorkspaces()).filter((entry) => entry.kind === "demo")) {
+      for (const demoProject of await listProjects(workspace.id)) {
+        expect(await countMentions({ projectId: demoProject.id }), demoProject.name).toBeGreaterThan(300);
       }
     }
   });
@@ -53,22 +53,22 @@ describe("tohumlama", () => {
 describe("liste, sayım ve grafik tutarlılığı", () => {
   const range = resolveRange("30g", NOW);
 
-  it("özet, zaman serisi ve liste aynı toplamı verir", () => {
+  it("özet, zaman serisi ve liste aynı toplamı verir", async () => {
     const filter = { projectId: project.id, range };
-    const summary = summarize(filter);
-    const seriesTotal = timeSeries(filter, "day").reduce((sum, point) => sum + point.total, 0);
-    const listed = listMentions(filter, { limit: 100_000, offset: 0 }).length;
+    const summary = await summarize(filter);
+    const seriesTotal = (await timeSeries(filter, "day")).reduce((sum, point) => sum + point.total, 0);
+    const listed = (await listMentions(filter, { limit: 100_000, offset: 0 })).length;
 
-    expect(summary.total).toBe(countMentions(filter));
+    expect(summary.total).toBe(await countMentions(filter));
     expect(seriesTotal).toBe(summary.total);
     expect(listed).toBe(summary.total);
     expect(summary.positive + summary.negative + summary.neutral).toBe(summary.total);
   });
 
-  it("kaynak türü dağılımının toplamı özete eşittir", () => {
+  it("kaynak türü dağılımının toplamı özete eşittir", async () => {
     const filter = { projectId: project.id, range };
-    const bySource = breakdown(filter, "sourceType", 20).reduce((sum, row) => sum + row.total, 0);
-    expect(bySource).toBe(summarize(filter).total);
+    const bySource = (await breakdown(filter, "sourceType", 20)).reduce((sum, row) => sum + row.total, 0);
+    expect(bySource).toBe((await summarize(filter)).total);
   });
 
   it.each([
@@ -83,12 +83,12 @@ describe("liste, sayım ve grafik tutarlılığı", () => {
     "takipçi:>5000 etkileşim:>=20",
     "=rezalet",
     'konu:"Ulaşım" duygu:öfke',
-  ])("SQL derleyici ile bellek içi eşleştirici aynı sonucu verir: %s", (query) => {
+  ])("SQL derleyici ile bellek içi eşleştirici aynı sonucu verir: %s", async (query) => {
     const ast = parseQuery(query);
-    const topicNames = new Map(listTopics(project.id).map((topic) => [topic.id, topic.name]));
-    const all = listMentions({ projectId: project.id }, { limit: 100_000, offset: 0 });
+    const topicNames = new Map((await listTopics(project.id)).map((topic) => [topic.id, topic.name]));
+    const all = await listMentions({ projectId: project.id }, { limit: 100_000, offset: 0 });
     const searchTexts = new Map(
-      queryAll<{ id: string; search_text: string }>("SELECT id, search_text FROM mentions WHERE project_id = ?", [project.id]).map(
+      (await queryAll<{ id: string; search_text: string }>("SELECT id, search_text FROM mentions WHERE project_id = ?", [project.id])).map(
         (row) => [row.id, row.search_text],
       ),
     );
@@ -112,48 +112,48 @@ describe("liste, sayım ve grafik tutarlılığı", () => {
       }).matched;
     }).length;
 
-    expect(countMentions({ projectId: project.id, query: ast })).toBe(expected);
+    expect(await countMentions({ projectId: project.id, query: ast })).toBe(expected);
     expect(expected, "sorgu demo verisinde en az bir sonuç vermeli").toBeGreaterThan(0);
   });
 });
 
 describe("insan düzeltmeleri", () => {
-  it("ton düzeltmesi sayımlara yansır, model sonucu korunur", () => {
+  it("ton düzeltmesi sayımlara yansır, model sonucu korunur", async () => {
     const filter = { projectId: project.id };
-    const before = summarize(filter);
-    const target = listMentions({ ...filter, query: parseQuery("ton:olumsuz") }, { limit: 1, offset: 0 })[0];
+    const before = await summarize(filter);
+    const target = (await listMentions({ ...filter, query: parseQuery("ton:olumsuz") }, { limit: 1, offset: 0 }))[0];
 
-    setSentimentOverride(target.id, "positive");
-    const after = summarize(filter);
+    await setSentimentOverride(target.id, "positive");
+    const after = await summarize(filter);
     expect(after.negative).toBe(before.negative - 1);
     expect(after.positive).toBe(before.positive + 1);
 
-    const reloaded = listMentions({ ...filter, query: parseQuery("ton:olumlu") }, { limit: 100_000, offset: 0 }).find(
+    const reloaded = (await listMentions({ ...filter, query: parseQuery("ton:olumlu") }, { limit: 100_000, offset: 0 })).find(
       (mention) => mention.id === target.id,
     );
     expect(reloaded).toMatchObject({ sentiment: "negative", sentimentOverride: "positive" });
 
-    setSentimentOverride(target.id, null);
-    expect(summarize(filter)).toEqual(before);
+    await setSentimentOverride(target.id, null);
+    expect(await summarize(filter)).toEqual(before);
   });
 
-  it("ilgisiz işaretlenen içerik tüm metriklerden çıkar", () => {
+  it("ilgisiz işaretlenen içerik tüm metriklerden çıkar", async () => {
     const filter = { projectId: project.id };
-    const before = summarize(filter).total;
-    const target = listMentions(filter, { limit: 1, offset: 0 })[0];
+    const before = (await summarize(filter)).total;
+    const target = (await listMentions(filter, { limit: 1, offset: 0 }))[0];
 
-    setIrrelevant(target.id, true);
-    expect(summarize(filter).total).toBe(before - 1);
-    expect(countMentions({ ...filter, includeIrrelevant: true })).toBe(before);
-    setIrrelevant(target.id, false);
+    await setIrrelevant(target.id, true);
+    expect((await summarize(filter)).total).toBe(before - 1);
+    expect(await countMentions({ ...filter, includeIrrelevant: true })).toBe(before);
+    await setIrrelevant(target.id, false);
   });
 });
 
 describe("konu etiketleme", () => {
-  it("planlı olayın konusu olay gününde öne çıkar", () => {
-    const topics = listTopics(project.id);
+  it("planlı olayın konusu olay gününde öne çıkar", async () => {
+    const topics = await listTopics(project.id);
     const strike = topics.find((topic) => topic.name === "Su kesintisi")!;
-    const rows = topicBreakdown({ projectId: project.id });
+    const rows = await topicBreakdown({ projectId: project.id });
     const strikeRow = rows.find((row) => row.topicId === strike.id);
     expect(strikeRow?.total ?? 0).toBeGreaterThan(40);
     expect(strikeRow!.negative / strikeRow!.total).toBeGreaterThan(0.6);
@@ -167,13 +167,13 @@ describe("kapsam farkındalığı", () => {
     const { bucketStart, DAY_MS } = await import("@/lib/time");
 
     // Projenin ilk haftası: öncesinde veri yok, taban çizgisi kurulamaz.
-    const firstDay = bucketStart(earliestPublishedAt(project.id)!, "day");
-    expect(findAnomalies(project.id, { from: firstDay, to: firstDay + 7 * DAY_MS }, "day")).toEqual([]);
+    const firstDay = bucketStart((await earliestPublishedAt(project.id))!, "day");
+    expect(await findAnomalies(project.id, { from: firstDay, to: firstDay + 7 * DAY_MS }, "day")).toEqual([]);
   });
 
   it("planlı olayı kritik düzeyde yakalar", async () => {
     const { findAnomalies } = await import("@/server/services/alerts");
-    const anomalies = findAnomalies(project.id, resolveRange("30g", NOW), "day");
+    const anomalies = await findAnomalies(project.id, resolveRange("30g", NOW), "day");
     expect(anomalies.some((anomaly) => anomaly.level === "critical" && anomaly.kinds.includes("volume"))).toBe(true);
   });
 });
@@ -181,16 +181,16 @@ describe("kapsam farkındalığı", () => {
 describe("demo verisinin yenilenmesi", () => {
   it("gün değişince aynı içerikleri bugüne göre yeniden üretir; gelecek tarihli kayıt oluşmaz", async () => {
     const { DAY_MS } = await import("@/lib/time");
-    const before = countMentions({ projectId: project.id });
+    const before = await countMentions({ projectId: project.id });
 
     // Ertesi gün, gece yarısından hemen sonra: bugünün kovası neredeyse boşken.
     const nextDay = Date.parse("2026-11-13T00:10:00+03:00");
-    ensureSeeded(nextDay);
+    await ensureSeeded(nextDay);
 
-    const [{ latest }] = queryAll<{ latest: number }>("SELECT MAX(published_at) AS latest FROM mentions WHERE project_id = ?", [project.id]);
+    const [{ latest }] = await queryAll<{ latest: number }>("SELECT MAX(published_at) AS latest FROM mentions WHERE project_id = ?", [project.id]);
     expect(latest).toBeLessThan(nextDay);
     expect(nextDay - latest).toBeLessThan(DAY_MS);
     // Hacim aynı ölçekte kalır (yalnızca bugünün kısmi günü farklıdır).
-    expect(Math.abs(countMentions({ projectId: project.id }) - before)).toBeLessThan(before * 0.05);
+    expect(Math.abs(await countMentions({ projectId: project.id }) - before)).toBeLessThan(before * 0.05);
   });
 });

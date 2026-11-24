@@ -20,16 +20,16 @@ export async function generateAiSummaryAction(_previous: FormState, formData: Fo
   if (shortage) return failure(shortage);
   const outcome = await generateAiSummary(project, rangeKey, Date.now());
   if (!outcome.ok) return failure(outcome.message);
-  spendCredits(viewer, "summary", project.id, Date.now());
+  await spendCredits(viewer, "summary", project.id, Date.now());
 
-  recordAudit({
-    actor: viewer?.email,
-    workspaceId: project.workspaceId,
-    action: "yapayzeka.özet",
-    objectType: "proje",
-    objectId: project.id,
-    detail: `${outcome.summary.mentionsSent} içerik ${outcome.summary.model} modeline gönderildi`,
-  });
+  await recordAudit({
+        actor: viewer?.email,
+        workspaceId: project.workspaceId,
+        action: "yapayzeka.özet",
+        objectType: "proje",
+        objectId: project.id,
+        detail: `${outcome.summary.mentionsSent} içerik ${outcome.summary.model} modeline gönderildi`,
+      });
   refresh();
   return { ok: true, message: "Özet oluşturuldu.", errors: {} };
 }
@@ -49,16 +49,16 @@ export async function askQuestionAction(_previous: AskState, formData: FormData)
   if (shortage) return { status: "error", message: shortage };
   const outcome = await askQuestion(project, rangeKey, question, Date.now());
   if (!outcome.ok) return { status: "error", message: outcome.message };
-  spendCredits(viewer, "ask", project.id, Date.now());
+  await spendCredits(viewer, "ask", project.id, Date.now());
 
-  recordAudit({
-    actor: viewer?.email,
-    workspaceId: project.workspaceId,
-    action: "yapayzeka.soru",
-    objectType: "proje",
-    objectId: project.id,
-    detail: `${outcome.mentionsSent} içerik ${outcome.model} modeline gönderildi`,
-  });
+  await recordAudit({
+        actor: viewer?.email,
+        workspaceId: project.workspaceId,
+        action: "yapayzeka.soru",
+        objectType: "proje",
+        objectId: project.id,
+        detail: `${outcome.mentionsSent} içerik ${outcome.model} modeline gönderildi`,
+      });
   return { status: "answered", question, answer: outcome.answer, evidenceIds: outcome.evidenceIds, model: outcome.model, mentionsSent: outcome.mentionsSent };
 }
 
@@ -71,16 +71,16 @@ export async function classifyMentionsAction(_previous: FormState, formData: For
   if (shortage) return failure(shortage);
   const outcome = await classifyMentions(project, rangeKey, Date.now());
   if (!outcome.ok) return failure(outcome.message);
-  spendCredits(viewer, "classify", project.id, Date.now());
+  await spendCredits(viewer, "classify", project.id, Date.now());
 
-  recordAudit({
-    actor: viewer?.email,
-    workspaceId: project.workspaceId,
-    action: "yapayzeka.sınıflandırma",
-    objectType: "proje",
-    objectId: project.id,
-    detail: `${outcome.sent} içerik ${outcome.model} modeline gönderildi; ${outcome.classified} tanesi sınıflandırıldı`,
-  });
+  await recordAudit({
+        actor: viewer?.email,
+        workspaceId: project.workspaceId,
+        action: "yapayzeka.sınıflandırma",
+        objectType: "proje",
+        objectId: project.id,
+        detail: `${outcome.sent} içerik ${outcome.model} modeline gönderildi; ${outcome.classified} tanesi sınıflandırıldı`,
+      });
   refresh();
   const parts = [`${outcome.classified} içerik sınıflandırıldı`, `${outcome.toneChanged} tanesinde ton değişti`, `${outcome.topicsAdded} konu eşleşmesi eklendi`];
   if (outcome.failedBatches > 0) parts.push(`${outcome.failedBatches} grup başarısız oldu`);

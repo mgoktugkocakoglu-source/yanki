@@ -38,9 +38,9 @@ function check(url: string, rating: string): FactCheck {
   return { publisherName: "Örnek Doğrulama", publisherSite: "ornek.example", url, title: "Başlık", rating, reviewDate: NOW, claimText: "İncelenen iddia", language: "tr" };
 }
 
-beforeAll(() => {
-  ensureSeeded(NOW);
-  project = listProjects(listWorkspaces()[0].id)[0];
+beforeAll(async () => {
+  await ensureSeeded(NOW);
+  project = (await listProjects((await listWorkspaces())[0].id))[0];
 });
 
 describe("eşleştirme istemi", () => {
@@ -56,7 +56,7 @@ describe("eşleştirme istemi", () => {
 describe("iddia taraması", () => {
   it("sağlayıcı yokken kapalıdır", async () => {
     expect(await scanClaims(project, "7g", NOW, null, null)).toMatchObject({ ok: false, reason: "disabled" });
-    expect(getLatestClaimRun(project.id, "7g")).toBeNull();
+    expect(await getLatestClaimRun(project.id, "7g")).toBeNull();
   });
 
   it("dayanağı olmayan iddiayı atar, yalnızca modelin eşleştirdiği doğrulamaları saklar", async () => {
@@ -93,7 +93,7 @@ describe("iddia taraması", () => {
     expect(run.claims[1].checks).toEqual([]);
     expect(Object.values(run.claims[0].platforms).reduce((sum, count) => sum + count, 0)).toBe(2);
 
-    const stored = getLatestClaimRun(project.id, "30g")!;
+    const stored = (await getLatestClaimRun(project.id, "30g"))!;
     expect(stored.claims.map((claim) => claim.text)).toEqual(run.claims.map((claim) => claim.text));
     expect(stored.claims[0].checks[0]).toMatchObject({ publisherName: "Örnek Doğrulama", rating: "Doğru" });
   });
@@ -108,7 +108,7 @@ describe("iddia taraması", () => {
     });
     expect(failing).toMatchObject({ ok: true, run: { factCheckStatus: "error", factCheckMessage: "API etkin değil." } });
     // Aynı proje ve dönem için yalnızca son tarama saklanır.
-    expect(getLatestClaimRun(project.id, "24s")?.factCheckStatus).toBe("error");
+    expect((await getLatestClaimRun(project.id, "24s"))?.factCheckStatus).toBe("error");
     expect(provider.matchRequests).toHaveLength(0);
   });
 

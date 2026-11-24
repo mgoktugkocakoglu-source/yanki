@@ -18,7 +18,7 @@ export default async function SystemPage() {
   const viewer = await requireSysadmin();
   if (!viewer) return <SetupPrompt />;
 
-  const organizations = listOrganizations();
+  const organizations = await listOrganizations();
   const accounts = organizations.reduce((sum, organization) => sum + organization.userCount, 0);
   const pooled = organizations.reduce((sum, organization) => sum + organization.creditPool, 0);
   const held = organizations.reduce((sum, organization) => sum + organization.userCredits, 0);
@@ -36,7 +36,7 @@ export default async function SystemPage() {
             { label: "Kurum", value: formatNumber(organizations.length), note: `${formatNumber(organizations.filter((organization) => organization.suspendedAt !== null).length)} askıda` },
             { label: "Hesap", value: formatNumber(accounts), note: "kurum yöneticileri ve kullanıcılar" },
             { label: "Dağıtılmamış kredi", value: formatNumber(pooled), note: `kullanıcılarda ${formatNumber(held)}` },
-            { label: "Son 30 günde harcanan", value: formatNumber(creditsSpentSince(null, now - MONTH_MS)), note: "tüm kurumlar" },
+            { label: "Son 30 günde harcanan", value: formatNumber(await creditsSpentSince(null, now - MONTH_MS)), note: "tüm kurumlar" },
           ]}
         />
 

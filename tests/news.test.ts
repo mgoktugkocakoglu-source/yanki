@@ -102,9 +102,9 @@ describe("tarayıcı dönüşümleri", () => {
     expect(entries[0]).toMatchObject({ url: "https://ornek.com.tr/haber/1", title: "Meclis bütçeyi görüştü", publishedAt: Date.parse("2026-11-24T08:00:00+03:00") });
   });
 
-  it("tarihsiz, saklama süresinden eski ve gelecek tarihli girişleri arşive almaz", () => {
-    seedFeeds(NOW);
-    const feed = listFeeds()[0];
+  it("tarihsiz, saklama süresinden eski ve gelecek tarihli girişleri arşive almaz", async () => {
+    await seedFeeds(NOW);
+    const feed = (await listFeeds())[0];
     const entry = (id: string, publishedAt: number | null) => ({
       id,
       title: `Başlık ${id}`,
@@ -121,31 +121,31 @@ describe("tarayıcı dönüşümleri", () => {
 });
 
 describe("akış kaydı", () => {
-  it("başlangıç listesi bir kez yüklenir, adresler tekildir", () => {
-    seedFeeds(NOW);
-    seedFeeds(NOW);
-    expect(listFeeds().filter((feed) => feed.origin === "seed")).toHaveLength(SEED_FEEDS.length);
+  it("başlangıç listesi bir kez yüklenir, adresler tekildir", async () => {
+    await seedFeeds(NOW);
+    await seedFeeds(NOW);
+    expect((await listFeeds()).filter((feed) => feed.origin === "seed")).toHaveLength(SEED_FEEDS.length);
     expect(new Set(SEED_FEEDS.map((feed) => feed.url)).size).toBe(SEED_FEEDS.length);
     expect(SEED_FEEDS.every((feed) => feed.url.startsWith("https://"))).toBe(true);
   });
 
-  it("hata veren akışın sırası ertelenir, başarıda sayaç sıfırlanır; kapalı akış taranmaz", () => {
+  it("hata veren akışın sırası ertelenir, başarıda sayaç sıfırlanır; kapalı akış taranmaz", async () => {
     const url = "https://deneme.example.com/rss";
-    addFeed({ outlet: "Deneme", domain: "deneme.example.com", url, kind: "rss", language: "tr", origin: "manual" }, NOW);
-    const find = () => listFeeds().find((feed) => feed.url === url)!;
-    const isDue = (at: number) => listDueFeeds(at).some((feed) => feed.url === url);
+    await addFeed({ outlet: "Deneme", domain: "deneme.example.com", url, kind: "rss", language: "tr", origin: "manual" }, NOW);
+    const find = async () => (await listFeeds()).find((feed) => feed.url === url)!;
+    const isDue = async (at: number) => (await listDueFeeds(at)).some((feed) => feed.url === url);
 
-    recordFeedResult(find(), { status: "error", error: "HTTP 500", itemCount: 0, etag: null, lastModified: null, nextDueAt: NOW + HOUR }, NOW);
-    expect(find()).toMatchObject({ failures: 1, lastStatus: "error", lastOkAt: null });
-    expect(isDue(NOW + 60_000)).toBe(false);
-    expect(isDue(NOW + 2 * HOUR)).toBe(true);
+    await recordFeedResult(await find(), { status: "error", error: "HTTP 500", itemCount: 0, etag: null, lastModified: null, nextDueAt: NOW + HOUR }, NOW);
+    expect(await find()).toMatchObject({ failures: 1, lastStatus: "error", lastOkAt: null });
+    expect(await isDue(NOW + 60_000)).toBe(false);
+    expect(await isDue(NOW + 2 * HOUR)).toBe(true);
 
-    recordFeedResult(find(), { status: "ok", error: null, itemCount: 12, etag: "abc", lastModified: null, nextDueAt: NOW }, NOW + HOUR);
-    expect(find()).toMatchObject({ failures: 0, lastStatus: "ok", lastItemCount: 12, etag: "abc", lastOkAt: NOW + HOUR });
+    await recordFeedResult(await find(), { status: "ok", error: null, itemCount: 12, etag: "abc", lastModified: null, nextDueAt: NOW }, NOW + HOUR);
+    expect(await find()).toMatchObject({ failures: 0, lastStatus: "ok", lastItemCount: 12, etag: "abc", lastOkAt: NOW + HOUR });
 
-    setFeedEnabled(find().id, false);
-    expect(getFeed(find().id)?.enabled).toBe(false);
-    expect(isDue(NOW + 9 * HOUR)).toBe(false);
+    await setFeedEnabled((await find()).id, false);
+    expect((await getFeed((await find()).id))?.enabled).toBe(false);
+    expect(await isDue(NOW + 9 * HOUR)).toBe(false);
   });
 });
 
@@ -172,10 +172,10 @@ describe("arşiv ve eşleştirme", () => {
   ];
   const since = NOW - 7 * DAY;
 
-  it("aynı adres ikinci kez eklenmez", () => {
-    expect(insertArticles(corpus, NOW)).toBe(corpus.length);
-    expect(insertArticles(corpus, NOW)).toBe(0);
-    expect(archiveStats(NOW - HOUR).articles).toBe(corpus.length);
+  it("aynı adres ikinci kez eklenmez", async () => {
+    expect(await insertArticles(corpus, NOW)).toBe(corpus.length);
+    expect(await insertArticles(corpus, NOW)).toBe(0);
+    expect((await archiveStats(NOW - HOUR)).articles).toBe(corpus.length);
   });
 
   it("çekimde değişmeyen ön ek, kökün her çekimli biçiminde geçer", () => {
@@ -192,7 +192,7 @@ describe("arşiv ve eşleştirme", () => {
     }
   });
 
-  it("arşiv ön süzgeci, sorguyla eşleşen hiçbir haberi kaçırmaz", () => {
+  it("arşiv ön süzgeci, sorguyla eşleşen hiçbir haberi kaçırmaz", async () => {
     const queries = ["kitap", "renk", "seçim -çekiliş", '(belediye OR "hava durumu") dil:tr', '"belediye meclisi" bütçe', "ulaşım OR yağmur", "sandık*", "=baskısı"];
     for (const text of queries) {
       const ast = parseQuery(text);
@@ -201,20 +201,20 @@ describe("arşiv ve eşleştirme", () => {
         .filter((entry) => entry.publishedAt >= since)
         .filter((entry) => matchQuery(ast, tokenize(`${entry.title} \n ${entry.summary}`), { ...EMPTY_FIELDS, language: "tr" }).matched)
         .map((entry) => entry.externalId);
-      const candidates = findCandidateArticles(plan.groups, since).map((entry) => entry.externalId);
+      const candidates = (await findCandidateArticles(plan.groups, since)).map((entry) => entry.externalId);
       expect(expected.length, text).toBeGreaterThan(0);
       expect(expected.every((id) => candidates.includes(id)), text).toBe(true);
       expect(candidates.includes("5"), text).toBe(false);
     }
   });
 
-  it("ön süzgeç gerçekten daraltır: ilgisiz haberler aday olmaz", () => {
-    expect(findCandidateArticles([["kitap"]], since).map((entry) => entry.externalId)).toEqual(["1"]);
-    expect(findCandidateArticles([["belediye"], ["bütçe"]], since).map((entry) => entry.externalId)).toEqual(["2"]);
+  it("ön süzgeç gerçekten daraltır: ilgisiz haberler aday olmaz", async () => {
+    expect((await findCandidateArticles([["kitap"]], since)).map((entry) => entry.externalId)).toEqual(["1"]);
+    expect((await findCandidateArticles([["belediye"], ["bütçe"]], since)).map((entry) => entry.externalId)).toEqual(["2"]);
   });
 
-  it("saklama süresi dolan başlıklar silinir", () => {
-    expect(pruneArticles(since)).toBe(1);
-    expect(archiveStats(NOW).articles).toBe(corpus.length - 1);
+  it("saklama süresi dolan başlıklar silinir", async () => {
+    expect(await pruneArticles(since)).toBe(1);
+    expect((await archiveStats(NOW)).articles).toBe(corpus.length - 1);
   });
 });

@@ -31,28 +31,28 @@ function toShare(row: ShareRow): ReportShare {
 }
 
 /** Proje ve dönem için etkin bağlantı varsa onu döndürür, yoksa yenisini oluşturur. */
-export function ensureShare(workspaceId: string, projectId: string, rangeKey: RangeKey, now: number): ReportShare {
-  const existing = queryOne<ShareRow>(`SELECT ${COLUMNS} FROM report_shares WHERE project_id = ? AND range_key = ? AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 1`, [
-    projectId,
-    rangeKey,
-  ]);
+export async function ensureShare(workspaceId: string, projectId: string, rangeKey: RangeKey, now: number): Promise<ReportShare> {
+  const existing = await queryOne<ShareRow>(`SELECT ${COLUMNS} FROM report_shares WHERE project_id = ? AND range_key = ? AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 1`, [
+      projectId,
+      rangeKey,
+    ]);
   if (existing) return toShare(existing);
 
   const token = randomBytes(24).toString("base64url");
-  execute("INSERT INTO report_shares (token, workspace_id, project_id, range_key, created_at) VALUES (?, ?, ?, ?, ?)", [token, workspaceId, projectId, rangeKey, now]);
+  await execute("INSERT INTO report_shares (token, workspace_id, project_id, range_key, created_at) VALUES (?, ?, ?, ?, ?)", [token, workspaceId, projectId, rangeKey, now]);
   return { token, projectId, rangeKey, createdAt: now, revokedAt: null };
 }
 
 /** Yalnızca etkin (iptal edilmemiş) bağlantıyı döndürür. */
-export function getActiveShare(token: string): ReportShare | null {
-  const row = queryOne<ShareRow>(`SELECT ${COLUMNS} FROM report_shares WHERE token = ? AND revoked_at IS NULL`, [token]);
+export async function getActiveShare(token: string): Promise<ReportShare | null> {
+  const row = await queryOne<ShareRow>(`SELECT ${COLUMNS} FROM report_shares WHERE token = ? AND revoked_at IS NULL`, [token]);
   return row ? toShare(row) : null;
 }
 
-export function listActiveShares(projectId: string): ReportShare[] {
-  return queryAll<ShareRow>(`SELECT ${COLUMNS} FROM report_shares WHERE project_id = ? AND revoked_at IS NULL ORDER BY created_at DESC`, [projectId]).map(toShare);
+export async function listActiveShares(projectId: string): Promise<ReportShare[]> {
+  return (await queryAll<ShareRow>(`SELECT ${COLUMNS} FROM report_shares WHERE project_id = ? AND revoked_at IS NULL ORDER BY created_at DESC`, [projectId])).map(toShare);
 }
 
-export function revokeShare(token: string, now: number): boolean {
-  return execute("UPDATE report_shares SET revoked_at = ? WHERE token = ? AND revoked_at IS NULL", [now, token]) > 0;
+export async function revokeShare(token: string, now: number): Promise<boolean> {
+  return await execute("UPDATE report_shares SET revoked_at = ? WHERE token = ? AND revoked_at IS NULL", [now, token]) > 0;
 }

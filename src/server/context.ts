@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import type { Project, Workspace } from "@/domain/types";
 import { DEFAULT_RANGE, isRangeKey, type RangeKey } from "@/lib/time";
-import { canSeeProject, visibleProjects, type Viewer } from "./auth/access";
+import { loadCanSeeProject, loadVisibleProjects, type Viewer } from "./auth/access";
 import { requireUser } from "./auth/session";
 import { ensureSeeded } from "./setup/seed";
 import { getProject, listProjects } from "./repositories/projects";
@@ -28,9 +28,9 @@ function first(value: string | string[] | undefined): string | undefined {
 export async function requestStart(): Promise<number> {
   await connection();
   const now = Date.now();
-  ensureSeeded(now);
+  await ensureSeeded(now);
   // Hazır gündem projeleri ilk kurulduklarında beklemeden bir kez taranır.
-  for (const projectId of seedAgendaProjects(now)) {
+  for (const projectId of await seedAgendaProjects(now)) {
     void collectProject(projectId).catch((error) => console.error("[yankı] gündem projesi taranamadı:", error));
   }
   return now;
@@ -51,11 +51,11 @@ export interface ProjectContext {
 export async function loadProjectContext(projectId: string): Promise<ProjectContext | null> {
   const now = await requestStart();
   const viewer = await requireUser();
-  const project = getProject(projectId);
-  const workspace = project ? getWorkspace(project.workspaceId) : null;
+  const project = await getProject(projectId);
+  const workspace = project ? await getWorkspace(project.workspaceId) : null;
   // Başkasının konusu "yok" gibi davranır; varlığı da sızmaz.
-  if (!project || !workspace || !canSeeProject(viewer, project)) return null;
-  return { now, project, workspace, siblings: visibleProjects(viewer, listProjects(workspace.id)), workspaces: listWorkspaces(), viewer };
+  if (!project || !workspace || !(await loadCanSeeProject(viewer, project))) return null;
+  return { now, project, workspace, siblings: (await loadVisibleProjects(viewer, await listProjects(workspace.id))), workspaces: await listWorkspaces(), viewer };
 }
 
 export interface WorkspaceContext {
@@ -70,10 +70,10 @@ export interface WorkspaceContext {
 export async function loadWorkspaceContext(): Promise<WorkspaceContext> {
   const now = await requestStart();
   const viewer = await requireUser();
-  const workspaces = listWorkspaces();
+  const workspaces = await listWorkspaces();
   const selectedId = (await cookies()).get(WORKSPACE_COOKIE)?.value;
   const workspace = workspaces.find((entry) => entry.id === selectedId) ?? workspaces.find((entry) => entry.kind === "live") ?? workspaces[0];
-  return { now, workspace, projects: visibleProjects(viewer, listProjects(workspace.id)), workspaces, viewer };
+  return { now, workspace, projects: (await loadVisibleProjects(viewer, await listProjects(workspace.id))), workspaces, viewer };
 }
 
 export async function rememberWorkspace(workspaceId: string): Promise<void> {

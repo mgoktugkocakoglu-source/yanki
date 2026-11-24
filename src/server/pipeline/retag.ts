@@ -10,16 +10,16 @@ const RETAG_LIMIT = 200_000;
  * Konu sorguları yalnızca metne bakar (alan filtresi içeremez), bu yüzden
  * saklanan arama metni yeterlidir.
  */
-export function retagProject(projectId: string): number {
-  const topics = listTopics(projectId).map((topic) => ({ id: topic.id, ast: parseQuery(topic.query) }));
+export async function retagProject(projectId: string): Promise<number> {
+  const topics = (await listTopics(projectId)).map((topic) => ({ id: topic.id, ast: parseQuery(topic.query) }));
   const assignments: Array<{ mentionId: string; topicId: string }> = [];
 
-  for (const { id, searchText } of listSearchTexts({ projectId, includeIrrelevant: true }, RETAG_LIMIT)) {
+  for (const { id, searchText } of await listSearchTexts({ projectId, includeIrrelevant: true }, RETAG_LIMIT)) {
     const tokens = searchText.split(" ");
     for (const topic of topics) {
       if (matchQuery(topic.ast, tokens).matched) assignments.push({ mentionId: id, topicId: topic.id });
     }
   }
-  replaceMentionTopics(projectId, assignments);
+  await replaceMentionTopics(projectId, assignments);
   return assignments.length;
 }

@@ -30,7 +30,7 @@ export async function generateAiSummary(
 
   const range = resolveRange(rangeKey, now);
   const filter: MentionFilter = { projectId: project.id, range };
-  const mentions = listMentions(filter, { limit: SUMMARY_MENTION_LIMIT, offset: 0 }, "recent");
+  const mentions = await listMentions(filter, { limit: SUMMARY_MENTION_LIMIT, offset: 0 }, "recent");
   if (mentions.length === 0) return { ok: false, reason: "empty", message: "Bu dönemde özetlenecek içerik yok." };
 
   const items = mentions.map((mention, index) => ({
@@ -47,29 +47,29 @@ export async function generateAiSummary(
       rangeLabel: RANGE_PRESETS[rangeKey].label,
       items,
     });
-    const summary = saveAiSummary({
-      workspaceId: project.workspaceId,
-      projectId: project.id,
-      rangeKey,
-      range,
-      provider: provider.id,
-      model: provider.model,
-      summary: draft.summary.trim(),
-      // Model, gönderilmeyen bir numarayı kanıt gösterirse o gönderme atılır.
-      themes: draft.themes.map((theme) => ({
-        title: theme.title.trim(),
-        description: theme.description.trim(),
-        mentionIds: [...new Set(theme.mentionNumbers)].flatMap((number) => {
-          const mention = Number.isInteger(number) ? mentions[number - 1] : undefined;
-          return mention ? [mention.id] : [];
-        }),
-      })),
-      mentionsSent: mentions.length,
-      mentionsTotal: countMentions(filter),
-      inputTokens: draft.inputTokens,
-      outputTokens: draft.outputTokens,
-      createdAt: now,
-    });
+    const summary = await saveAiSummary({
+          workspaceId: project.workspaceId,
+          projectId: project.id,
+          rangeKey,
+          range,
+          provider: provider.id,
+          model: provider.model,
+          summary: draft.summary.trim(),
+          // Model, gönderilmeyen bir numarayı kanıt gösterirse o gönderme atılır.
+          themes: draft.themes.map((theme) => ({
+            title: theme.title.trim(),
+            description: theme.description.trim(),
+            mentionIds: [...new Set(theme.mentionNumbers)].flatMap((number) => {
+              const mention = Number.isInteger(number) ? mentions[number - 1] : undefined;
+              return mention ? [mention.id] : [];
+            }),
+          })),
+          mentionsSent: mentions.length,
+          mentionsTotal: await countMentions(filter),
+          inputTokens: draft.inputTokens,
+          outputTokens: draft.outputTokens,
+          createdAt: now,
+        });
     return { ok: true, summary };
   } catch (error) {
     const message = error instanceof AiError ? error.message : "Özet oluşturulurken beklenmeyen bir hata oluştu.";

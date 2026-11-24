@@ -44,7 +44,7 @@ export async function scanClaims(
 
   const range = resolveRange(rangeKey, now);
   const filter: MentionFilter = { projectId: project.id, range };
-  const mentions = listMentions(filter, { limit: CLAIM_MENTION_LIMIT, offset: 0 }, "recent");
+  const mentions = await listMentions(filter, { limit: CLAIM_MENTION_LIMIT, offset: 0 }, "recent");
   if (mentions.length === 0) return { ok: false, reason: "empty", message: "Bu dönemde taranacak içerik yok." };
 
   try {
@@ -139,19 +139,19 @@ export async function scanClaims(
       };
     });
 
-    const run = saveClaimRun({
-      workspaceId: project.workspaceId,
-      projectId: project.id,
-      rangeKey,
-      range,
-      model: provider.model,
-      mentionsSent: mentions.length,
-      mentionsTotal: countMentions(filter),
-      factCheckStatus: status,
-      factCheckMessage: message,
-      createdAt: now,
-      claims,
-    });
+    const run = await saveClaimRun({
+          workspaceId: project.workspaceId,
+          projectId: project.id,
+          rangeKey,
+          range,
+          model: provider.model,
+          mentionsSent: mentions.length,
+          mentionsTotal: await countMentions(filter),
+          factCheckStatus: status,
+          factCheckMessage: message,
+          createdAt: now,
+          claims,
+        });
     return { ok: true, run };
   } catch (error) {
     const message = error instanceof AiError ? error.message : "İddia taraması sırasında beklenmeyen bir hata oluştu.";

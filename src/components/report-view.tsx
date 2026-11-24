@@ -28,11 +28,11 @@ function Section({ title, note, children }: { title: string; note?: string; chil
 
 const LEVEL_LABEL = { info: "bilgi", attention: "dikkat", critical: "kritik" } as const;
 
-export function ReportView({ project, rangeKey, now }: { project: Project; rangeKey: RangeKey; now: number }) {
-  const overview = getOverview(project, rangeKey, now);
+export async function ReportView({ project, rangeKey, now }: { project: Project; rangeKey: RangeKey; now: number }) {
+  const overview = await getOverview(project, rangeKey, now);
   const { summary, previousSummary } = overview;
-  const aiSummary = getLatestAiSummary(project.id, rangeKey);
-  const claimRun = getLatestClaimRun(project.id, rangeKey);
+  const aiSummary = await getLatestAiSummary(project.id, rangeKey);
+  const claimRun = await getLatestClaimRun(project.id, rangeKey);
   const topics = overview.topics.filter((topic) => topic.total > 0).slice(0, 8);
 
   const figures = [

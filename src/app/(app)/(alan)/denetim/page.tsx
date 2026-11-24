@@ -52,9 +52,9 @@ export default async function AuditPage() {
   // Kapsam role göre değişir: sistem yöneticisi tüm kayıtları, yetkili kurum yöneticisi
   // yalnızca kendi kurumununkileri görür; kullanıcılar bu ekrana giremez.
   let events: AuditEvent[];
-  if (viewer === null) events = listAuditEvents(workspace.id, PAGE_SIZE);
-  else if (isSysadmin(viewer)) events = listAllAuditEvents(PAGE_SIZE);
-  else if (viewer.orgId !== null && can(viewer, "audit.view")) events = listOrgAuditEvents(viewer.orgId, PAGE_SIZE);
+  if (viewer === null) events = await listAuditEvents(workspace.id, PAGE_SIZE);
+  else if (isSysadmin(viewer)) events = await listAllAuditEvents(PAGE_SIZE);
+  else if (viewer.orgId !== null && can(viewer, "audit.view")) events = await listOrgAuditEvents(viewer.orgId, PAGE_SIZE);
   else redirect(homePath(viewer));
 
   return (

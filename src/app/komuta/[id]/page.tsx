@@ -11,7 +11,7 @@ async function LiveBoard({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const context = await loadProjectContext(id);
   if (!context) notFound();
-  return <CommandCenter initial={getLiveSnapshot(context.project, context.workspace, context.now)} />;
+  return <CommandCenter initial={await getLiveSnapshot(context.project, context.workspace, context.now)} />;
 }
 
 export default function CommandCenterPage({ params }: PageProps<"/komuta/[id]">) {

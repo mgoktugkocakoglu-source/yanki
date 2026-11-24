@@ -56,8 +56,8 @@ export async function askQuestion(project: Project, rangeKey: RangeKey, question
   if (text.length < 3) return { ok: false, reason: "invalid", message: "Sorunuzu yazın." };
   if (text.length > QUESTION_MAX_LENGTH) return { ok: false, reason: "invalid", message: `Soru en çok ${QUESTION_MAX_LENGTH} karakter olabilir.` };
 
-  const overview = getOverview(project, rangeKey, now);
-  const mentions = listMentions({ projectId: project.id, range: overview.range }, { limit: ASK_MENTION_LIMIT, offset: 0 }, "recent");
+  const overview = await getOverview(project, rangeKey, now);
+  const mentions = await listMentions({ projectId: project.id, range: overview.range }, { limit: ASK_MENTION_LIMIT, offset: 0 }, "recent");
   if (mentions.length === 0) return { ok: false, reason: "empty", message: "Bu dönemde soruya dayanak olacak içerik yok." };
 
   try {

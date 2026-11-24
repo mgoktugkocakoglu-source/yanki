@@ -19,8 +19,8 @@ export default async function AccountPage() {
   const viewer = await requireUser();
   if (!viewer) return <SetupPrompt />;
 
-  const organization = viewer.orgId ? getOrganization(viewer.orgId) : null;
-  const ledger = viewer.role === "sysadmin" ? [] : listLedger(viewer.id, 40);
+  const organization = viewer.orgId ? await getOrganization(viewer.orgId) : null;
+  const ledger = viewer.role === "sysadmin" ? [] : await listLedger(viewer.id, 40);
   const facts: [string, string][] = [
     ["Ad soyad", viewer.name],
     ["E-posta", viewer.email],

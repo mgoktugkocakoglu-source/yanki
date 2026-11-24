@@ -1,5 +1,5 @@
 import type { Mention, ReachBasis, Sentiment, SourceType, TimeRange } from "@/domain/types";
-import { compileToSql, type QueryNode } from "@/lib/query";
+import { buildCollectionPlan, groupProbes, matchQuery, probeConditions, type QueryNode } from "@/lib/query";
 import { execute, queryAll, queryOne, transaction, type SqlParams } from "../db/client";
 
 /**
@@ -25,7 +25,64 @@ export interface WhereClause {
 /** Önce kullanıcı düzeltmesi, sonra dil modeli, sonra kural tabanlı sonuç (bkz. `effectiveSentiment`). */
 export const EFFECTIVE_SENTIMENT = "COALESCE(m.sentiment_override, m.ai_sentiment, m.sentiment)";
 
-export function buildWhere(filter: MentionFilter): WhereClause {
+interface MatchRow {
+  id: string;
+  search_text: string;
+  source_type: string;
+  source_name: string;
+  sentiment: string;
+  emotion: string;
+  intent: string;
+  language: string;
+  author_handle: string | null;
+  author_name: string | null;
+  is_sarcastic: number;
+  reach: number | null;
+  engagement: number | null;
+  author_followers: number | null;
+  topics: string | null;
+}
+
+/** Konu adlarını tek sütunda taşımak için ayırıcı (metinde geçmeyen denetim karakteri). */
+const TOPIC_SEPARATOR = String.fromCharCode(31);
+
+/**
+ * Kullanıcının süzgeciyle eşleşen içeriklerin kimlikleri. Veritabanı yalnızca
+ * kaba adayları getirir; eşleşme kararını, toplama sırasında da kullanılan
+ * aynı eşleştirici (`matchQuery`) verir. Türkçe ek kuralları böylece tek
+ * yerde kalır ve liste, sayım ve grafik hep aynı kümeyi görür.
+ */
+async function matchingIds(query: QueryNode, baseConditions: string[], baseParams: SqlParams): Promise<string[]> {
+  const probes = probeConditions("m.search_text", groupProbes(buildCollectionPlan(query)?.groups ?? []));
+  const rows = await queryAll<MatchRow>(
+    `SELECT m.id, m.search_text, m.source_type, m.source_name, ${EFFECTIVE_SENTIMENT} AS sentiment, m.emotion, m.intent, m.language,
+            m.author_handle, m.author_name, m.is_sarcastic, m.reach, m.engagement, m.author_followers,
+            (SELECT string_agg(pt.name, chr(31)) FROM mention_topics mt JOIN project_topics pt ON pt.id = mt.topic_id WHERE mt.mention_id = m.id) AS topics
+     FROM mentions m WHERE ${[...baseConditions, ...probes.conditions].join(" AND ")}`,
+    [...baseParams, ...probes.params],
+  );
+  return rows
+    .filter(
+      (row) =>
+        matchQuery(query, row.search_text.split(" "), {
+          sourceType: row.source_type,
+          site: row.source_name,
+          sentiment: row.sentiment,
+          emotion: row.emotion,
+          intent: row.intent,
+          language: row.language,
+          author: `${row.author_handle ?? ""} ${row.author_name ?? ""}`,
+          topics: row.topics ? row.topics.split(TOPIC_SEPARATOR) : [],
+          isSarcastic: row.is_sarcastic === 1,
+          reach: row.reach,
+          engagement: row.engagement,
+          followers: row.author_followers,
+        }).matched,
+    )
+    .map((row) => row.id);
+}
+
+export async function buildWhere(filter: MentionFilter): Promise<WhereClause> {
   const conditions = ["m.project_id = ?"];
   const params: SqlParams = [filter.projectId];
 
@@ -37,9 +94,9 @@ export function buildWhere(filter: MentionFilter): WhereClause {
     conditions.push("m.is_irrelevant = 0");
   }
   if (filter.query) {
-    const compiled = compileToSql(filter.query, "m");
-    conditions.push(compiled.sql);
-    params.push(...compiled.params);
+    const ids = await matchingIds(filter.query, conditions, params);
+    conditions.push("m.id = ANY(?::text[])");
+    params.push(ids);
   }
   return { sql: conditions.join(" AND "), params };
 }
@@ -137,15 +194,15 @@ interface MentionTopicIds {
 
 const NO_TOPICS: MentionTopicIds = { all: [], ai: [] };
 
-function loadTopicIds(mentionIds: string[]): Map<string, MentionTopicIds> {
+async function loadTopicIds(mentionIds: string[]): Promise<Map<string, MentionTopicIds>> {
   const byMention = new Map<string, MentionTopicIds>();
   if (mentionIds.length === 0) return byMention;
 
   const placeholders = mentionIds.map(() => "?").join(", ");
-  const rows = queryAll<{ mention_id: string; topic_id: string; source: string }>(
-    `SELECT mention_id, topic_id, source FROM mention_topics WHERE mention_id IN (${placeholders})`,
-    mentionIds,
-  );
+  const rows = await queryAll<{ mention_id: string; topic_id: string; source: string }>(
+      `SELECT mention_id, topic_id, source FROM mention_topics WHERE mention_id IN (${placeholders})`,
+      mentionIds,
+    );
   for (const row of rows) {
     const entry = byMention.get(row.mention_id) ?? { all: [], ai: [] };
     entry.all.push(row.topic_id);
@@ -168,25 +225,25 @@ export interface Page {
   offset: number;
 }
 
-export function listMentions(filter: MentionFilter, page: Page, sort: MentionSort = "recent"): Mention[] {
-  const where = buildWhere(filter);
-  const rows = queryAll<MentionRow>(
-    `SELECT ${MENTION_COLUMNS} FROM mentions m WHERE ${where.sql} ORDER BY ${ORDER_BY[sort]} LIMIT ? OFFSET ?`,
-    [...where.params, page.limit, page.offset],
-  );
-  const topics = loadTopicIds(rows.map((row) => row.id));
+export async function listMentions(filter: MentionFilter, page: Page, sort: MentionSort = "recent"): Promise<Mention[]> {
+  const where = await buildWhere(filter);
+  const rows = await queryAll<MentionRow>(
+      `SELECT ${MENTION_COLUMNS} FROM mentions m WHERE ${where.sql} ORDER BY ${ORDER_BY[sort]} LIMIT ? OFFSET ?`,
+      [...where.params, page.limit, page.offset],
+    );
+  const topics = await loadTopicIds(rows.map((row) => row.id));
   return rows.map((row) => toMention(row, topics.get(row.id)));
 }
 
-export function countMentions(filter: MentionFilter): number {
-  const where = buildWhere(filter);
-  const row = queryOne<{ count: number }>(`SELECT COUNT(*) AS count FROM mentions m WHERE ${where.sql}`, where.params);
+export async function countMentions(filter: MentionFilter): Promise<number> {
+  const where = await buildWhere(filter);
+  const row = await queryOne<{ count: number }>(`SELECT COUNT(*) AS count FROM mentions m WHERE ${where.sql}`, where.params);
   return row?.count ?? 0;
 }
 
-export function getMention(id: string): Mention | null {
-  const row = queryOne<MentionRow>(`SELECT ${MENTION_COLUMNS} FROM mentions m WHERE m.id = ?`, [id]);
-  return row ? toMention(row, loadTopicIds([id]).get(id)) : null;
+export async function getMention(id: string): Promise<Mention | null> {
+  const row = await queryOne<MentionRow>(`SELECT ${MENTION_COLUMNS} FROM mentions m WHERE m.id = ?`, [id]);
+  return row ? toMention(row, (await loadTopicIds([id])).get(id)) : null;
 }
 
 export interface NewMention extends Omit<Mention, "sentimentOverride" | "isIrrelevant" | "aiSentiment" | "aiModel" | "aiTopicIds"> {
@@ -194,53 +251,53 @@ export interface NewMention extends Omit<Mention, "sentimentOverride" | "isIrrel
   analyzerVersion: string;
 }
 
-const INSERT_SQL = `INSERT OR IGNORE INTO mentions (
+const INSERT_SQL = `INSERT INTO mentions (
   id, workspace_id, project_id, connector_id, source_type, source_name, external_id, url, title, content, search_text,
   author_name, author_handle, author_followers, language, published_at, collected_at, likes, comments, shares, views,
   engagement, reach, reach_basis, sentiment, sentiment_score, sentiment_confidence, emotion, is_sarcastic, intent,
   story_key, analyzer_version, is_demo
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`;
 
-function insertOne(mention: NewMention): boolean {
-  const inserted = execute(INSERT_SQL, [
-    mention.id,
-    mention.workspaceId,
-    mention.projectId,
-    mention.connectorId,
-    mention.sourceType,
-    mention.sourceName,
-    mention.externalId,
-    mention.url,
-    mention.title,
-    mention.content,
-    mention.searchText,
-    mention.authorName,
-    mention.authorHandle,
-    mention.authorFollowers,
-    mention.language,
-    mention.publishedAt,
-    mention.collectedAt,
-    mention.likes,
-    mention.comments,
-    mention.shares,
-    mention.views,
-    mention.engagement,
-    mention.reach,
-    mention.reachBasis,
-    mention.sentiment,
-    mention.sentimentScore,
-    mention.sentimentConfidence,
-    mention.emotion,
-    mention.isSarcastic ? 1 : 0,
-    mention.intent,
-    mention.storyKey,
-    mention.analyzerVersion,
-    mention.isDemo ? 1 : 0,
-  ]);
+async function insertOne(mention: NewMention): Promise<boolean> {
+  const inserted = await execute(INSERT_SQL, [
+      mention.id,
+      mention.workspaceId,
+      mention.projectId,
+      mention.connectorId,
+      mention.sourceType,
+      mention.sourceName,
+      mention.externalId,
+      mention.url,
+      mention.title,
+      mention.content,
+      mention.searchText,
+      mention.authorName,
+      mention.authorHandle,
+      mention.authorFollowers,
+      mention.language,
+      mention.publishedAt,
+      mention.collectedAt,
+      mention.likes,
+      mention.comments,
+      mention.shares,
+      mention.views,
+      mention.engagement,
+      mention.reach,
+      mention.reachBasis,
+      mention.sentiment,
+      mention.sentimentScore,
+      mention.sentimentConfidence,
+      mention.emotion,
+      mention.isSarcastic ? 1 : 0,
+      mention.intent,
+      mention.storyKey,
+      mention.analyzerVersion,
+      mention.isDemo ? 1 : 0,
+    ]);
   if (inserted === 0) return false;
 
   for (const topicId of mention.topicIds) {
-    execute("INSERT OR IGNORE INTO mention_topics (mention_id, topic_id) VALUES (?, ?)", [mention.id, topicId]);
+    await execute("INSERT INTO mention_topics (mention_id, topic_id) VALUES (?, ?) ON CONFLICT DO NOTHING", [mention.id, topicId]);
   }
   return true;
 }
@@ -249,45 +306,51 @@ function insertOne(mention: NewMention): boolean {
  * Bahsetmeleri ekler. Aynı kaynak kimliği daha önce kaydedildiyse atlanır
  * (idempotent); dönen sayı gerçekten eklenen yeni kayıtlardır.
  */
-export function insertMentions(mentions: NewMention[]): number {
+export async function insertMentions(mentions: NewMention[]): Promise<number> {
   if (mentions.length === 0) return 0;
-  return transaction(() => mentions.reduce((count, mention) => count + (insertOne(mention) ? 1 : 0), 0));
+  return transaction(async () => {
+    let inserted = 0;
+    for (const mention of mentions) {
+      if (await insertOne(mention)) inserted += 1;
+    }
+    return inserted;
+  });
 }
 
-export function setSentimentOverride(id: string, sentiment: Sentiment | null): void {
-  execute("UPDATE mentions SET sentiment_override = ? WHERE id = ?", [sentiment, id]);
+export async function setSentimentOverride(id: string, sentiment: Sentiment | null): Promise<void> {
+  await execute("UPDATE mentions SET sentiment_override = ? WHERE id = ?", [sentiment, id]);
 }
 
-export function setIrrelevant(id: string, isIrrelevant: boolean): void {
-  execute("UPDATE mentions SET is_irrelevant = ? WHERE id = ?", [isIrrelevant ? 1 : 0, id]);
+export async function setIrrelevant(id: string, isIrrelevant: boolean): Promise<void> {
+  await execute("UPDATE mentions SET is_irrelevant = ? WHERE id = ?", [isIrrelevant ? 1 : 0, id]);
 }
 
 /** Projenin kural tabanlı konu eşleşmelerini baştan yazar; dil modelinin atadıkları korunur. */
-export function replaceMentionTopics(projectId: string, assignments: Array<{ mentionId: string; topicId: string }>): void {
-  transaction(() => {
-    execute("DELETE FROM mention_topics WHERE source = 'rule' AND mention_id IN (SELECT id FROM mentions WHERE project_id = ?)", [projectId]);
-    for (const { mentionId, topicId } of assignments) {
-      execute("INSERT OR IGNORE INTO mention_topics (mention_id, topic_id) VALUES (?, ?)", [mentionId, topicId]);
-    }
-  });
+export async function replaceMentionTopics(projectId: string, assignments: Array<{ mentionId: string; topicId: string }>): Promise<void> {
+  await transaction(async () => {
+        await execute("DELETE FROM mention_topics WHERE source = 'rule' AND mention_id IN (SELECT id FROM mentions WHERE project_id = ?)", [projectId]);
+        for (const { mentionId, topicId } of assignments) {
+          await execute("INSERT INTO mention_topics (mention_id, topic_id) VALUES (?, ?) ON CONFLICT DO NOTHING", [mentionId, topicId]);
+        }
+      });
 }
 
 /* ── Dil modeli sınıflandırması ───────────────────────────────────────── */
 
 /** Dönemin henüz dil modeliyle sınıflandırılmamış içerikleri, en yeniden eskiye. */
-export function listUnclassified(filter: MentionFilter, limit: number): Mention[] {
-  const where = buildWhere(filter);
-  const rows = queryAll<MentionRow>(
-    `SELECT ${MENTION_COLUMNS} FROM mentions m WHERE ${where.sql} AND m.ai_classified_at IS NULL ORDER BY m.published_at DESC, m.id LIMIT ?`,
-    [...where.params, limit],
-  );
-  const topics = loadTopicIds(rows.map((row) => row.id));
+export async function listUnclassified(filter: MentionFilter, limit: number): Promise<Mention[]> {
+  const where = await buildWhere(filter);
+  const rows = await queryAll<MentionRow>(
+      `SELECT ${MENTION_COLUMNS} FROM mentions m WHERE ${where.sql} AND m.ai_classified_at IS NULL ORDER BY m.published_at DESC, m.id LIMIT ?`,
+      [...where.params, limit],
+    );
+  const topics = await loadTopicIds(rows.map((row) => row.id));
   return rows.map((row) => toMention(row, topics.get(row.id)));
 }
 
-export function countAiClassified(filter: MentionFilter): number {
-  const where = buildWhere(filter);
-  const row = queryOne<{ count: number }>(`SELECT COUNT(*) AS count FROM mentions m WHERE ${where.sql} AND m.ai_classified_at IS NOT NULL`, where.params);
+export async function countAiClassified(filter: MentionFilter): Promise<number> {
+  const where = await buildWhere(filter);
+  const row = await queryOne<{ count: number }>(`SELECT COUNT(*) AS count FROM mentions m WHERE ${where.sql} AND m.ai_classified_at IS NOT NULL`, where.params);
   return row?.count ?? 0;
 }
 
@@ -298,15 +361,15 @@ export interface AiClassification {
 }
 
 /** Dil modeli sonucunu yazar. Kural tabanlı sonuç ve insan düzeltmesi silinmez. */
-export function saveAiClassifications(classifications: AiClassification[], model: string, now: number): void {
-  transaction(() => {
-    for (const { mentionId, sentiment, topicIds } of classifications) {
-      execute("UPDATE mentions SET ai_sentiment = ?, ai_model = ?, ai_classified_at = ? WHERE id = ?", [sentiment, model, now, mentionId]);
-      for (const topicId of topicIds) {
-        execute("INSERT OR IGNORE INTO mention_topics (mention_id, topic_id, source) VALUES (?, ?, 'ai')", [mentionId, topicId]);
-      }
-    }
-  });
+export async function saveAiClassifications(classifications: AiClassification[], model: string, now: number): Promise<void> {
+  await transaction(async () => {
+        for (const { mentionId, sentiment, topicIds } of classifications) {
+          await execute("UPDATE mentions SET ai_sentiment = ?, ai_model = ?, ai_classified_at = ? WHERE id = ?", [sentiment, model, now, mentionId]);
+          for (const topicId of topicIds) {
+            await execute("INSERT INTO mention_topics (mention_id, topic_id, source) VALUES (?, ?, 'ai') ON CONFLICT DO NOTHING", [mentionId, topicId]);
+          }
+        }
+      });
 }
 
 export interface SearchableMention {
@@ -315,12 +378,12 @@ export interface SearchableMention {
 }
 
 /** Yeniden etiketleme ve kök neden analizi için yalnızca arama metinleri. */
-export function listSearchTexts(filter: MentionFilter, limit: number): SearchableMention[] {
-  const where = buildWhere(filter);
-  return queryAll<{ id: string; search_text: string }>(
-    `SELECT m.id, m.search_text FROM mentions m WHERE ${where.sql} ORDER BY m.published_at DESC LIMIT ?`,
-    [...where.params, limit],
-  ).map((row) => ({ id: row.id, searchText: row.search_text }));
+export async function listSearchTexts(filter: MentionFilter, limit: number): Promise<SearchableMention[]> {
+  const where = await buildWhere(filter);
+  return (await queryAll<{ id: string; search_text: string }>(
+      `SELECT m.id, m.search_text FROM mentions m WHERE ${where.sql} ORDER BY m.published_at DESC LIMIT ?`,
+      [...where.params, limit],
+    )).map((row) => ({ id: row.id, searchText: row.search_text }));
 }
 
 export interface MentionText {
@@ -330,12 +393,12 @@ export interface MentionText {
 }
 
 /** Yalnızca başlık ve içerik; öne çıkan ifadeleri özgün yazımıyla bulmak için. */
-export function listTexts(filter: MentionFilter, limit: number): MentionText[] {
-  const where = buildWhere(filter);
-  return queryAll<{ title: string; content: string; story_key: string }>(
-    `SELECT m.title, m.content, m.story_key FROM mentions m WHERE ${where.sql} ORDER BY m.published_at DESC LIMIT ?`,
-    [...where.params, limit],
-  ).map((row) => ({ title: row.title, content: row.content, storyKey: row.story_key }));
+export async function listTexts(filter: MentionFilter, limit: number): Promise<MentionText[]> {
+  const where = await buildWhere(filter);
+  return (await queryAll<{ title: string; content: string; story_key: string }>(
+      `SELECT m.title, m.content, m.story_key FROM mentions m WHERE ${where.sql} ORDER BY m.published_at DESC LIMIT ?`,
+      [...where.params, limit],
+    )).map((row) => ({ title: row.title, content: row.content, storyKey: row.story_key }));
 }
 
 /**
@@ -343,18 +406,18 @@ export function listTexts(filter: MentionFilter, limit: number): MentionText[] {
  * öncesi "sıfır bahsetme" değil, "veri yok"tur; karşılaştırma ve anomali
  * hesapları bu ayrımı gözetir.
  */
-export function earliestPublishedAt(projectId: string): number | null {
-  const row = queryOne<{ earliest: number | null }>("SELECT MIN(published_at) AS earliest FROM mentions WHERE project_id = ?", [projectId]);
+export async function earliestPublishedAt(projectId: string): Promise<number | null> {
+  const row = await queryOne<{ earliest: number | null }>("SELECT MIN(published_at) AS earliest FROM mentions WHERE project_id = ?", [projectId]);
   return row?.earliest ?? null;
 }
 
-export function latestCollectedAt(projectId: string): number | null {
-  const row = queryOne<{ latest: number | null }>("SELECT MAX(collected_at) AS latest FROM mentions WHERE project_id = ?", [projectId]);
+export async function latestCollectedAt(projectId: string): Promise<number | null> {
+  const row = await queryOne<{ latest: number | null }>("SELECT MAX(collected_at) AS latest FROM mentions WHERE project_id = ?", [projectId]);
   return row?.latest ?? null;
 }
 
-export function latestPublishedAt(projectId: string): number | null {
-  const row = queryOne<{ latest: number | null }>("SELECT MAX(published_at) AS latest FROM mentions WHERE project_id = ?", [projectId]);
+export async function latestPublishedAt(projectId: string): Promise<number | null> {
+  const row = await queryOne<{ latest: number | null }>("SELECT MAX(published_at) AS latest FROM mentions WHERE project_id = ?", [projectId]);
   return row?.latest ?? null;
 }
 

@@ -35,9 +35,9 @@ export default async function NewsArchivePage() {
   const viewer = await requireSysadmin();
   if (!viewer) return <SetupPrompt />;
 
-  const stats = archiveStats(now - DAY_MS);
-  const feeds = listFeeds();
-  const counts = articleCountsByFeed();
+  const stats = await archiveStats(now - DAY_MS);
+  const feeds = await listFeeds();
+  const counts = await articleCountsByFeed();
 
   return (
     <PageContainer>

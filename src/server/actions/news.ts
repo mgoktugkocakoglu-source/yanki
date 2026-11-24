@@ -38,21 +38,21 @@ export async function addFeedAction(_previous: AuthState, formData: FormData): P
 
   const domain = hostnameOf(parsed.data.url) ?? parsed.data.url;
   const now = Date.now();
-  if (!addFeed({ outlet: parsed.data.outlet, domain, url: parsed.data.url, kind: probe.kind, language: parsed.data.language, origin: "manual" }, now)) {
+  if (!await addFeed({ outlet: parsed.data.outlet, domain, url: parsed.data.url, kind: probe.kind, language: parsed.data.language, origin: "manual" }, now)) {
     return fail("Bu adres zaten listede.");
   }
-  recordAudit({ workspaceId: null, action: "haber-akışı.eklendi", objectType: "haber akışı", objectId: null, detail: `${parsed.data.outlet} · ${parsed.data.url}`, actor: viewer.email });
+  await recordAudit({ workspaceId: null, action: "haber-akışı.eklendi", objectType: "haber akışı", objectId: null, detail: `${parsed.data.outlet} · ${parsed.data.url}`, actor: viewer.email });
   refresh();
   return { ok: true, message: `Akış eklendi: ${probe.entries} haber okunabiliyor. İlk tarama birkaç dakika içinde yapılır.` };
 }
 
 export async function setFeedEnabledAction(formData: FormData): Promise<void> {
   const viewer = await requireUser();
-  const feed = getFeed(String(formData.get("feedId") ?? ""));
+  const feed = await getFeed(String(formData.get("feedId") ?? ""));
   if (!isSysadmin(viewer) || !feed) return;
   const enabled = formData.get("enabled") === "1";
-  setFeedEnabled(feed.id, enabled);
-  recordAudit({ workspaceId: null, action: enabled ? "haber-akışı.açıldı" : "haber-akışı.kapatıldı", objectType: "haber akışı", objectId: feed.id, detail: `${feed.outlet} · ${feed.url}`, actor: viewer.email });
+  await setFeedEnabled(feed.id, enabled);
+  await recordAudit({ workspaceId: null, action: enabled ? "haber-akışı.açıldı" : "haber-akışı.kapatıldı", objectType: "haber akışı", objectId: feed.id, detail: `${feed.outlet} · ${feed.url}`, actor: viewer.email });
   refresh();
 }
 

@@ -2,7 +2,8 @@ import { composeQuery, decomposeQuery, describeQuery, plainFromSearch, queryToTo
 import { describe, expect, it } from "vitest";
 import {
   buildCollectionPlan,
-  compileToSql,
+  groupProbes,
+  probeConditions,
   EMPTY_FIELDS,
   matchQuery,
   parseQuery,
@@ -167,20 +168,18 @@ describe("toplama planı", () => {
   });
 });
 
-describe("SQL derleyici", () => {
-  it("kullanıcı girdisini yalnızca parametre olarak taşır", () => {
-    const injection = `x'; DROP TABLE mentions; --`;
-    const { sql, params } = compileToSql(parseQuery(`"${injection}" site:"a%b_c"`));
-    expect(sql).not.toContain("DROP");
-    expect(sql).not.toContain("a%b");
-    expect(params).toContain("x drop table mentions");
-    expect(params).toContain("%a\\%b\\_c%");
+describe("veritabanı ön süzgeci", () => {
+  it("kullanıcı girdisini yalnızca parametre olarak taşır ve LIKE işaretlerini etkisizleştirir", () => {
+    const probes = groupProbes([["a%b_c"], ["x'; DROP TABLE mentions; --"]]);
+    const { conditions, params } = probeConditions("m.search_text", probes);
+    expect(conditions.join(" ")).not.toContain("DROP");
+    expect(conditions.every((condition) => /^\(m\.search_text LIKE \? ESCAPE '\\'( OR m\.search_text LIKE \? ESCAPE '\\')*\)$/.test(condition))).toBe(true);
+    expect(params).toHaveLength(2);
+    expect(params.some((param) => param.includes("%") && !param.slice(1, -1).includes("%"))).toBe(true);
   });
 
-  it("mantıksal yapıyı parantezlerle korur", () => {
-    const { sql, params } = compileToSql(parseQuery("(kargo OR teslimat) ton:olumsuz NOT çekiliş"));
-    expect(sql).toMatch(/^\(\(.+ OR .+\) AND .+ AND NOT COALESCE\(.+, 0\)\)$/s);
-    expect(params).toEqual(["%kargo%", "kargo", "inflect", "%teslima%", "teslimat", "inflect", "negative", "%cekilis%", "cekilis", "inflect"]);
+  it("yumuşayabilen son harfi atar; kelimesi olmayan grup süzgeç üretmez", () => {
+    expect(groupProbes([["kitap", "seçim"], ["!!!"]])).toEqual([["%kita%", "%secim%"]]);
   });
 });
 

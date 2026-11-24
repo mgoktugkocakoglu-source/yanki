@@ -8,7 +8,7 @@ export async function GET(_request: NextRequest, context: RouteContext<"/api/pro
   const loaded = await loadProjectContext(id);
   if (!loaded) return Response.json({ error: "Proje bulunamadı." }, { status: 404 });
 
-  return Response.json(getLiveSnapshot(loaded.project, loaded.workspace, loaded.now), {
+  return Response.json(await getLiveSnapshot(loaded.project, loaded.workspace, loaded.now), {
     headers: { "Cache-Control": "no-store" },
   });
 }

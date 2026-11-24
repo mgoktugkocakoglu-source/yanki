@@ -108,7 +108,7 @@ export default async function AnalysisPage({ params, searchParams }: PageProps<"
 
   const { project, now } = context;
   const rangeKey = readRange(await searchParams);
-  const analysis = getAnalysis(project, rangeKey, now);
+  const analysis = await getAnalysis(project, rangeKey, now);
   const { summary } = analysis;
 
   if (summary.total === 0) {

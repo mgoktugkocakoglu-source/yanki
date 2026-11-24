@@ -22,10 +22,10 @@ export default async function OrganizationPage({ params }: PageProps<"/sistem/ku
   const now = await requestStart();
   const viewer = await requireSysadmin();
   if (!viewer) return <SetupPrompt />;
-  const organization = getOrganization(id);
+  const organization = await getOrganization(id);
   if (!organization) notFound();
 
-  const members = listOrgUsers(organization.id);
+  const members = await listOrgUsers(organization.id);
   const suspended = organization.suspendedAt !== null;
 
   return (
@@ -56,10 +56,10 @@ export default async function OrganizationPage({ params }: PageProps<"/sistem/ku
             { label: "Kullanıcılardaki kredi", value: formatNumber(members.reduce((sum, member) => sum + member.credits, 0)) },
             {
               label: "Koltuk",
-              value: `${formatNumber(seatsInUse(organization.id, now))} / ${organization.seatLimit === null ? "∞" : formatNumber(organization.seatLimit)}`,
+              value: `${formatNumber(await seatsInUse(organization.id, now))} / ${organization.seatLimit === null ? "∞" : formatNumber(organization.seatLimit)}`,
               note: "etkin hesaplar ve bekleyen davetler",
             },
-            { label: "Son 30 günde harcanan", value: formatNumber(creditsSpentSince(organization.id, now - MONTH_MS)) },
+            { label: "Son 30 günde harcanan", value: formatNumber(await creditsSpentSince(organization.id, now - MONTH_MS)) },
           ]}
         />
 
@@ -76,13 +76,13 @@ export default async function OrganizationPage({ params }: PageProps<"/sistem/ku
         </Panel>
 
         <Panel title="Bekleyen davetler">
-          <InvitationList invitations={listOpenInvitations(organization.id)} viewer={viewer} now={now} />
+          <InvitationList invitations={await listOpenInvitations(organization.id)} viewer={viewer} now={now} />
         </Panel>
 
         <Panel title="Kredi havuzu" hint="Havuza yüklenen krediyi kurum içinde, kredi dağıtımı yetkisi olan yönetici kullanıcılara dağıtır.">
           <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
             <PoolForm orgId={organization.id} />
-            <PoolLedger entries={listPoolLedger(organization.id, 30)} />
+            <PoolLedger entries={await listPoolLedger(organization.id, 30)} />
           </div>
         </Panel>
 

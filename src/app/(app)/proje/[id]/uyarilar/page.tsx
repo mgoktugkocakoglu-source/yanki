@@ -40,8 +40,8 @@ export default async function AlertsPage({ params, searchParams }: PageProps<"/p
   const range = resolveRange(rangeKey, now);
   const bucket = RANGE_PRESETS[rangeKey].bucket;
 
-  const anomalies = findAnomalies(project.id, range, bucket, sensitivity).sort((a, b) => b.bucketStart - a.bucketStart);
-  const explained = anomalies.slice(0, MAX_EXPLAINED).map((anomaly) => explainAnomaly(project, anomaly, bucket));
+  const anomalies = (await findAnomalies(project.id, range, bucket, sensitivity)).sort((a, b) => b.bucketStart - a.bucketStart);
+  const explained = (await Promise.all(anomalies.slice(0, MAX_EXPLAINED).map(async (anomaly) => explainAnomaly(project, anomaly, bucket))));
   const critical = anomalies.filter((anomaly) => anomaly.level === "critical").length;
 
   return (

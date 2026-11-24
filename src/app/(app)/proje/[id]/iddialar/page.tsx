@@ -104,7 +104,7 @@ export default async function ClaimsPage({ params, searchParams }: PageProps<"/p
   const { project, now } = context;
   const rangeKey = readRange(await searchParams);
   const provider = getAiProvider();
-  const run = getLatestClaimRun(project.id, rangeKey);
+  const run = await getLatestClaimRun(project.id, rangeKey);
   const matched = run ? run.claims.filter((claim) => claim.checks.length > 0).length : 0;
 
   return (

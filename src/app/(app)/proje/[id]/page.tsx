@@ -74,7 +74,7 @@ export default async function OverviewPage({ params, searchParams }: PageProps<"
 
   const { project, workspace, now } = context;
   const rangeKey = readRange(await searchParams);
-  const overview = getOverview(project, rangeKey, now);
+  const overview = await getOverview(project, rangeKey, now);
   const listHref = projectHref(project.id, "bahsetmeler");
   const rangedListHref = mentionsHref(project.id, { rangeKey });
 
@@ -99,7 +99,7 @@ export default async function OverviewPage({ params, searchParams }: PageProps<"
 
   const parsedQuery = tryParseQuery(project.query);
   const highlightQueries = parsedQuery.ok ? [parsedQuery.ast] : [];
-  const topicNames = new Map(listTopics(project.id).map((topic) => [topic.id, topic.name]));
+  const topicNames = new Map((await listTopics(project.id)).map((topic) => [topic.id, topic.name]));
   const hasSeveralGroups = new Set(overview.topics.map((topic) => topic.groupName)).size > 1;
   const topicRows = overview.topics
     .filter((topic) => topic.total > 0)

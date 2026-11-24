@@ -108,18 +108,18 @@ type RobotsOutcome = { ok: true; rules: RobotsRules } | { ok: false; reason: str
  */
 async function robotsFor(origin: string, now: number): Promise<RobotsOutcome> {
   const host = new URL(origin).host;
-  const cached = getRobots(host);
+  const cached = await getRobots(host);
   if (cached && now - cached.fetchedAt < ROBOTS_TTL_MS) return { ok: true, rules: parseRobots(cached.body, agentToken()) };
 
   try {
     const response = await fetchConditional(`${origin}/robots.txt`, "text/plain, */*", { etag: null, lastModified: null });
     const body = response.status === "ok" ? response.body : "";
-    saveRobots(host, body, now);
+    await saveRobots(host, body, now);
     return { ok: true, rules: parseRobots(body, agentToken()) };
   } catch (error) {
     const status = error instanceof SourceRequestError ? error.status : null;
     if (status !== null && status >= 400 && status < 500) {
-      saveRobots(host, "", now);
+      await saveRobots(host, "", now);
       return { ok: true, rules: ALLOW_ALL };
     }
     // Daha önce okunmuş kurallar varsa onlarla devam etmek, kuralsız taramaktan güvenlidir.
@@ -143,23 +143,23 @@ async function crawlFeed(feed: NewsFeed, rules: RobotsRules, now: number): Promi
   const keep = { etag: feed.etag, lastModified: feed.lastModified };
 
   if (!isPathAllowed(rules, feed.url)) {
-    recordFeedResult(feed, { status: "robots", error: "robots.txt bu adresi taramaya kapatıyor", itemCount: 0, ...keep, nextDueAt: now + ROBOTS_BLOCK_RETRY_MS }, now);
+    await recordFeedResult(feed, { status: "robots", error: "robots.txt bu adresi taramaya kapatıyor", itemCount: 0, ...keep, nextDueAt: now + ROBOTS_BLOCK_RETRY_MS }, now);
     return { status: "robots", inserted: 0 };
   }
   try {
     const response = await fetchConditional(feed.url, FEED_ACCEPT, keep);
     if (response.status === "unchanged") {
-      recordFeedResult(feed, { status: "unchanged", error: null, itemCount: 0, ...keep, nextDueAt: now + interval }, now);
+      await recordFeedResult(feed, { status: "unchanged", error: null, itemCount: 0, ...keep, nextDueAt: now + interval }, now);
       return { status: "unchanged", inserted: 0 };
     }
     const entries = feed.kind === "sitemap" ? parseNewsSitemap(response.body) : parseFeed(response.body);
     if (entries.length === 0) throw new SourceRequestError("akışta okunabilir haber yok", null);
-    const inserted = insertArticles(toArticles(feed, entries, now), now);
-    recordFeedResult(feed, { status: "ok", error: null, itemCount: entries.length, etag: response.etag, lastModified: response.lastModified, nextDueAt: now + interval }, now);
+    const inserted = await insertArticles(toArticles(feed, entries, now), now);
+    await recordFeedResult(feed, { status: "ok", error: null, itemCount: entries.length, etag: response.etag, lastModified: response.lastModified, nextDueAt: now + interval }, now);
     return { status: "ok", inserted };
   } catch (error) {
     const reason = error instanceof Error ? error.message : "bilinmeyen hata";
-    recordFeedResult(feed, { status: "error", error: reason.slice(0, 200), itemCount: 0, ...keep, nextDueAt: now + backoff(feed.failures + 1) }, now);
+    await recordFeedResult(feed, { status: "error", error: reason.slice(0, 200), itemCount: 0, ...keep, nextDueAt: now + backoff(feed.failures + 1) }, now);
     return { status: "error", inserted: 0 };
   }
 }
@@ -180,7 +180,7 @@ async function crawlHost(feeds: NewsFeed[], summary: CrawlSummary, now: number):
   const robots = await robotsFor(origin, now);
   if (!robots.ok) {
     for (const feed of feeds) {
-      recordFeedResult(feed, { status: "error", error: robots.reason.slice(0, 200), itemCount: 0, etag: feed.etag, lastModified: feed.lastModified, nextDueAt: now + backoff(feed.failures + 1) }, now);
+      await recordFeedResult(feed, { status: "error", error: robots.reason.slice(0, 200), itemCount: 0, etag: feed.etag, lastModified: feed.lastModified, nextDueAt: now + backoff(feed.failures + 1) }, now);
       summary.errors += 1;
     }
     return;
@@ -206,8 +206,8 @@ type GlobalWithCrawl = typeof globalThis & { [RUNNING_KEY]?: Promise<CrawlSummar
 
 async function runCycle(): Promise<CrawlSummary> {
   const started = Date.now();
-  seedFeeds(started);
-  const due = listDueFeeds(started);
+  await seedFeeds(started);
+  const due = await listDueFeeds(started);
   const summary: CrawlSummary = { feeds: due.length, ok: 0, unchanged: 0, errors: 0, blocked: 0, inserted: 0, pruned: 0, durationMs: 0 };
 
   const byHost = new Map<string, NewsFeed[]>();
@@ -235,7 +235,7 @@ async function runCycle(): Promise<CrawlSummary> {
   });
   await Promise.all(workers);
 
-  summary.pruned = pruneArticles(started - config.newsRetentionDays * DAY_MS);
+  summary.pruned = await pruneArticles(started - config.newsRetentionDays * DAY_MS);
   summary.durationMs = Date.now() - started;
   return summary;
 }

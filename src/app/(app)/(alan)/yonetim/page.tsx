@@ -23,11 +23,11 @@ export default async function OrganizationAdminPage() {
   const now = await requestStart();
   const viewer = await requireOrgAdmin();
   if (!viewer) return <SetupPrompt />;
-  const organization = viewer.orgId ? getOrganization(viewer.orgId) : null;
+  const organization = viewer.orgId ? await getOrganization(viewer.orgId) : null;
   if (!organization) notFound();
 
-  const members = listOrgUsers(organization.id);
-  const invitations = listOpenInvitations(organization.id);
+  const members = await listOrgUsers(organization.id);
+  const invitations = await listOpenInvitations(organization.id);
   const mayInvite = can(viewer, "users.invite");
   const mayAssign = can(viewer, "credits.assign");
 
@@ -42,10 +42,10 @@ export default async function OrganizationAdminPage() {
             { label: "Kullanıcılardaki kredi", value: formatNumber(members.reduce((sum, member) => sum + member.credits, 0)) },
             {
               label: "Koltuk",
-              value: `${formatNumber(seatsInUse(organization.id, now))} / ${organization.seatLimit === null ? "∞" : formatNumber(organization.seatLimit)}`,
+              value: `${formatNumber(await seatsInUse(organization.id, now))} / ${organization.seatLimit === null ? "∞" : formatNumber(organization.seatLimit)}`,
               note: "etkin hesaplar ve bekleyen davetler",
             },
-            { label: "Son 30 günde harcanan", value: formatNumber(creditsSpentSince(organization.id, now - MONTH_MS)) },
+            { label: "Son 30 günde harcanan", value: formatNumber(await creditsSpentSince(organization.id, now - MONTH_MS)) },
           ]}
         />
 
@@ -71,7 +71,7 @@ export default async function OrganizationAdminPage() {
 
         {mayAssign ? (
           <Panel title="Havuz hareketleri" hint="Havuzu sistem yöneticisi doldurur; siz kullanıcılara dağıtırsınız.">
-            <PoolLedger entries={listPoolLedger(organization.id, 30)} />
+            <PoolLedger entries={await listPoolLedger(organization.id, 30)} />
           </Panel>
         ) : null}
 

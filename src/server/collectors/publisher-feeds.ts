@@ -40,7 +40,7 @@ function toRawItem(article: NewsArticle): RawItem {
 
 /** Arşiv hiç taranmadıysa ya da taraması gecikmişse önce bir tarama yapılır. */
 async function ensureFreshArchive(now: number): Promise<void> {
-  const { lastCrawlAt } = archiveStats(now);
+  const { lastCrawlAt } = await archiveStats(now);
   const staleAfter = Math.max(1, config.newsIntervalMinutes) * 2 * 60_000;
   if (lastCrawlAt === null || now - lastCrawlAt > staleAfter) await crawlNews();
 }
@@ -48,8 +48,8 @@ async function ensureFreshArchive(now: number): Promise<void> {
 async function collect(request: CollectRequest): Promise<CollectResult> {
   const now = Date.now();
   await ensureFreshArchive(now);
-  const stats = archiveStats(now);
-  const items = findCandidateArticles(request.groups, request.since).map(toRawItem);
+  const stats = await archiveStats(now);
+  const items = (await findCandidateArticles(request.groups, request.since)).map(toRawItem);
   const notes = stats.failingFeeds > 0 ? [`${stats.activeFeeds} akıştan ${stats.failingFeeds} tanesi son taramada yanıt vermedi.`] : [];
   return { items, notes };
 }

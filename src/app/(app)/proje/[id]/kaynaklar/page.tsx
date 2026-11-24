@@ -112,8 +112,8 @@ export default async function SourcesPage({ params, searchParams }: PageProps<"/
   const wasSaved = readString(query, "kaydedildi") === "1";
   const isLive = workspace.kind === "live";
 
-  const latest = new Map(latestRunPerConnector(project.id).map((run) => [run.connectorId, run]));
-  const runs = listRuns(project.id, 15);
+  const latest = new Map((await latestRunPerConnector(project.id)).map((run) => [run.connectorId, run]));
+  const runs = await listRuns(project.id, 15);
   const connectors = project.connectorIds.map((connectorId) => getConnector(connectorId)).filter((connector) => connector !== undefined);
 
   return (

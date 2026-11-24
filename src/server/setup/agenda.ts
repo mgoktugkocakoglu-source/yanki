@@ -31,19 +31,19 @@ const SEEDED_KEY = "agenda_seeded";
 let checked = false;
 
 /** Gündem projelerini (henüz kurulmadıysa) açar; yeni açılanların kimliklerini döndürür. */
-export function seedAgendaProjects(now: number): string[] {
+export async function seedAgendaProjects(now: number): Promise<string[]> {
   if (checked) return [];
   checked = true;
-  if (queryOne<{ value: string }>("SELECT value FROM app_meta WHERE key = ?", [SEEDED_KEY])) return [];
+  if (await queryOne<{ value: string }>("SELECT value FROM app_meta WHERE key = ?", [SEEDED_KEY])) return [];
 
-  const workspace = getWorkspaceByKind("live");
+  const workspace = await getWorkspaceByKind("live");
   const connectorIds = defaultConnectorIds();
   if (!workspace || connectorIds.length === 0) return [];
 
-  const existing = new Set(listProjects(workspace.id).map((project) => project.name));
-  const created = AGENDA_PROJECTS.filter((spec) => !existing.has(spec.name)).map(
-    (spec, index) => createProject(workspace.id, { name: spec.name, description: spec.description, query: spec.query, connectorIds }, now + index).id,
-  );
-  execute("INSERT INTO app_meta (key, value) VALUES (?, ?)", [SEEDED_KEY, String(now)]);
+  const existing = new Set((await listProjects(workspace.id)).map((project) => project.name));
+  const created = (await Promise.all(AGENDA_PROJECTS.filter((spec) => !existing.has(spec.name)).map(
+      async (spec, index) => (await createProject(workspace.id, { name: spec.name, description: spec.description, query: spec.query, connectorIds }, now + index)).id,
+    )));
+  await execute("INSERT INTO app_meta (key, value) VALUES (?, ?)", [SEEDED_KEY, String(now)]);
   return created;
 }

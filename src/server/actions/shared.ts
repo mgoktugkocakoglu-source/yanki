@@ -1,6 +1,6 @@
 import type { Project } from "@/domain/types";
 import { buildCollectionPlan, tryParseQuery, type QueryNode } from "@/lib/query";
-import { canSeeProject, type Viewer } from "../auth/access";
+import { loadCanSeeProject, type Viewer } from "../auth/access";
 import { enterAction } from "../auth/session";
 import { getProject } from "../repositories/projects";
 
@@ -26,8 +26,8 @@ export const failure = (message: string, errors: Record<string, string> = {}): F
  */
 export async function authorize(projectId: string): Promise<{ viewer: Viewer; project: Project | null }> {
   const viewer = await enterAction();
-  const project = getProject(projectId);
-  return { viewer, project: project && canSeeProject(viewer, project) ? project : null };
+  const project = await getProject(projectId);
+  return { viewer, project: project && (await loadCanSeeProject(viewer, project)) ? project : null };
 }
 
 export function validateQuery(query: string): { ok: true; ast: QueryNode } | { ok: false; message: string } {

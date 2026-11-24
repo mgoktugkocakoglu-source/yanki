@@ -90,18 +90,18 @@ export default async function MentionsPage({ params, searchParams }: PageProps<"
   const sortParam = readString(rawParams, PARAMS.sort);
   const sort: MentionSort = sortParam === "etkilesim" ? "engagement" : sortParam === "takipci" ? "followers" : "recent";
   const page = readPositiveInteger(rawParams, PARAMS.page, 1);
-  const total = countMentions(query.filter);
+  const total = await countMentions(query.filter);
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const mentions = listMentions(query.filter, { limit: PAGE_SIZE, offset: (Math.min(page, pageCount) - 1) * PAGE_SIZE }, sort);
+  const mentions = await listMentions(query.filter, { limit: PAGE_SIZE, offset: (Math.min(page, pageCount) - 1) * PAGE_SIZE }, sort);
 
   const selectedId = readString(rawParams, SELECTED_PARAM);
-  const found = selectedId ? getMention(selectedId) : null;
+  const found = selectedId ? await getMention(selectedId) : null;
   const selected = found?.projectId === project.id ? found : null;
   const hasActiveFilter = query.queryText !== "" || query.hasExplicitRange || query.includeIrrelevant;
 
-  const tones = summarize(query.filter);
-  const sources = breakdown(query.filter, "sourceType", 10);
-  const topicNames = new Map(listTopics(project.id).map((topic) => [topic.id, topic.name]));
+  const tones = await summarize(query.filter);
+  const sources = await breakdown(query.filter, "sourceType", 10);
+  const topicNames = new Map((await listTopics(project.id)).map((topic) => [topic.id, topic.name]));
 
   const projectQuery = tryParseQuery(project.query);
   const highlightQueries: QueryNode[] = [...(projectQuery.ok ? [projectQuery.ast] : []), ...(query.queryAst ? [query.queryAst] : [])];

@@ -33,9 +33,9 @@ function fakeProvider(respond: (request: SummaryRequest) => ReturnType<AiProvide
   };
 }
 
-beforeAll(() => {
-  ensureSeeded(NOW);
-  project = listProjects(listWorkspaces()[0].id)[0];
+beforeAll(async () => {
+  await ensureSeeded(NOW);
+  project = (await listProjects((await listWorkspaces())[0].id))[0];
 });
 
 describe("özet istemi", () => {
@@ -62,7 +62,7 @@ describe("yapay zekâ özeti", () => {
   it("sağlayıcı yokken kapalıdır ve kayıt oluşturmaz", async () => {
     const outcome = await generateAiSummary(project, "7g", NOW, null);
     expect(outcome).toMatchObject({ ok: false, reason: "disabled" });
-    expect(getLatestAiSummary(project.id, "7g")).toBeNull();
+    expect(await getLatestAiSummary(project.id, "7g")).toBeNull();
   });
 
   it("gönderilen içerik sayısını sınırlar ve sonucu kaynağıyla saklar", async () => {
@@ -87,7 +87,7 @@ describe("yapay zekâ özeti", () => {
     expect(summary.mentionsTotal).toBeGreaterThanOrEqual(summary.mentionsSent);
     // Gönderilmeyen, yinelenen ya da tam sayı olmayan numaralar atılır.
     expect(summary.themes[0].mentionIds).toHaveLength(2);
-    expect(getLatestAiSummary(project.id, "30g")).toEqual(summary);
+    expect(await getLatestAiSummary(project.id, "30g")).toEqual(summary);
   });
 
   it("sağlayıcı hatasını kullanıcıya gösterilebilir iletiyle döndürür", async () => {
@@ -96,6 +96,6 @@ describe("yapay zekâ özeti", () => {
     });
     const outcome = await generateAiSummary(project, "24s", NOW, provider);
     expect(outcome).toEqual({ ok: false, reason: "failed", message: "API anahtarı geçersiz." });
-    expect(getLatestAiSummary(project.id, "24s")).toBeNull();
+    expect(await getLatestAiSummary(project.id, "24s")).toBeNull();
   });
 });

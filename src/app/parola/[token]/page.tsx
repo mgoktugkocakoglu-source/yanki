@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Parola sıfırlama", robots: { index
 async function Reset({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const now = await requestStart();
-  const target = getResetTarget(token, now);
+  const target = await getResetTarget(token, now);
   if (!target) return <TokenInvalid kind="parola sıfırlama" />;
 
   return (

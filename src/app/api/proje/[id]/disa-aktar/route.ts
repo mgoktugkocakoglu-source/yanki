@@ -81,17 +81,17 @@ export async function GET(request: NextRequest, context: RouteContext<"/api/proj
   const query = readMentionQuery(loaded.project, searchParams, loaded.now);
   if (query.queryError) return new Response(`Sorgu geçersiz: ${query.queryError}`, { status: 422 });
 
-  const mentions = listMentions(query.filter, { limit: MAX_ROWS, offset: 0 });
-  const topicNames = new Map(listTopics(loaded.project.id).map((topic) => [topic.id, topic.name]));
+  const mentions = await listMentions(query.filter, { limit: MAX_ROWS, offset: 0 });
+  const topicNames = new Map((await listTopics(loaded.project.id)).map((topic) => [topic.id, topic.name]));
   const body = `﻿${[COLUMNS.join(SEPARATOR), ...mentions.map((mention) => toRow(mention, topicNames))].join("\r\n")}\r\n`;
 
-  recordAudit({
-    workspaceId: loaded.workspace.id,
-    action: "dışa-aktarım.csv",
-    objectType: "proje",
-    objectId: loaded.project.id,
-    detail: `${mentions.length} satır${query.queryText ? `, süzgeç: ${query.queryText}` : ""}`,
-  });
+  await recordAudit({
+        workspaceId: loaded.workspace.id,
+        action: "dışa-aktarım.csv",
+        objectType: "proje",
+        objectId: loaded.project.id,
+        detail: `${mentions.length} satır${query.queryText ? `, süzgeç: ${query.queryText}` : ""}`,
+      });
 
   const fileName = `yanki-${timestamp.format(loaded.now).slice(0, 10)}.csv`;
   return new Response(body, {

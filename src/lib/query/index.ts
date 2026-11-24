@@ -14,7 +14,6 @@ export { parseQuery, tryParseQuery } from "./parser";
 export type { ParseOutcome } from "./parser";
 export { buildCollectionPlan } from "./plan";
 export type { CollectionPlan } from "./plan";
-export { compileToSql } from "./sql";
-export type { SqlFragment } from "./sql";
+export { groupProbes, probeConditions } from "./probe";
 export { composeQuery, decomposeQuery, describeQuery, languageLabel, plainFromSearch, QUERY_LANGUAGES, queryToTopicTerms, splitTerms, topicTermsToQuery } from "./plain";
 export type { PlainQuery, QueryDescription } from "./plain";

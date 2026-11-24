@@ -76,10 +76,10 @@ export async function classifyMentions(
   if (!provider) return { ok: false, reason: "disabled", message: "Yapay zekâ sınıflandırması bu kurulumda kapalı." };
 
   const filter: MentionFilter = { projectId: project.id, range: resolveRange(rangeKey, now) };
-  const mentions = listUnclassified(filter, CLASSIFY_RUN_LIMIT);
+  const mentions = await listUnclassified(filter, CLASSIFY_RUN_LIMIT);
   if (mentions.length === 0) return { ok: false, reason: "empty", message: "Bu dönemde sınıflandırılmamış içerik kalmadı." };
 
-  const topics = listTopics(project.id);
+  const topics = await listTopics(project.id);
   const topicIds = topics.map((topic) => topic.id);
   const byId = new Map(mentions.map((mention) => [mention.id, mention]));
   const batches = chunk(mentions, CLASSIFY_BATCH_SIZE);
@@ -105,7 +105,7 @@ export async function classifyMentions(
         })),
       });
       const results = readResults(draft, batch, topicIds);
-      saveAiClassifications(results, provider.classifyModel, now);
+      await saveAiClassifications(results, provider.classifyModel, now);
       for (const result of results) {
         const mention = byId.get(result.mentionId)!;
         classified += 1;
@@ -134,7 +134,7 @@ export async function classifyMentions(
     toneChanged,
     topicsAdded,
     failedBatches,
-    remaining: countMentions(filter) - countAiClassified(filter),
+    remaining: await countMentions(filter) - await countAiClassified(filter),
     inputTokens,
     outputTokens,
   };

@@ -19,26 +19,26 @@ import { getOverview } from "@/server/services/overview";
 const NOW = Date.parse("2026-11-12T14:30:00+03:00");
 let project: Project;
 
-beforeAll(() => {
-  ensureSeeded(NOW);
-  project = listProjects(listWorkspaces()[0].id)[0];
+beforeAll(async () => {
+  await ensureSeeded(NOW);
+  project = (await listProjects((await listWorkspaces())[0].id))[0];
 });
 
 describe("rapor paylaşım bağlantısı", () => {
-  it("aynı proje ve dönem için tek etkin bağlantı tutar; iptal edilen açılmaz", () => {
-    const first = ensureShare(project.workspaceId, project.id, "7g", NOW);
+  it("aynı proje ve dönem için tek etkin bağlantı tutar; iptal edilen açılmaz", async () => {
+    const first = await ensureShare(project.workspaceId, project.id, "7g", NOW);
     expect(first.token.length).toBeGreaterThanOrEqual(32);
-    expect(ensureShare(project.workspaceId, project.id, "7g", NOW + 1).token).toBe(first.token);
-    expect(ensureShare(project.workspaceId, project.id, "30g", NOW).token).not.toBe(first.token);
-    expect(getActiveShare(first.token)).toMatchObject({ projectId: project.id, rangeKey: "7g" });
-    expect(listActiveShares(project.id)).toHaveLength(2);
+    expect((await ensureShare(project.workspaceId, project.id, "7g", NOW + 1)).token).toBe(first.token);
+    expect((await ensureShare(project.workspaceId, project.id, "30g", NOW)).token).not.toBe(first.token);
+    expect(await getActiveShare(first.token)).toMatchObject({ projectId: project.id, rangeKey: "7g" });
+    expect(await listActiveShares(project.id)).toHaveLength(2);
 
-    expect(revokeShare(first.token, NOW + 2)).toBe(true);
-    expect(revokeShare(first.token, NOW + 3)).toBe(false);
-    expect(getActiveShare(first.token)).toBeNull();
-    expect(getActiveShare("olmayan-anahtar")).toBeNull();
+    expect(await revokeShare(first.token, NOW + 2)).toBe(true);
+    expect(await revokeShare(first.token, NOW + 3)).toBe(false);
+    expect(await getActiveShare(first.token)).toBeNull();
+    expect(await getActiveShare("olmayan-anahtar")).toBeNull();
     // İptalden sonra yeni bağlantı farklı bir anahtarla oluşur.
-    expect(ensureShare(project.workspaceId, project.id, "7g", NOW + 4).token).not.toBe(first.token);
+    expect((await ensureShare(project.workspaceId, project.id, "7g", NOW + 4)).token).not.toBe(first.token);
   });
 });
 
@@ -63,10 +63,10 @@ describe("düz yazıyla soru", () => {
     };
   }
 
-  it("ölçüm dökümü panelin sayılarıyla aynıdır", () => {
-    const overview = getOverview(project, "30g", NOW);
+  it("ölçüm dökümü panelin sayılarıyla aynıdır", async () => {
+    const overview = await getOverview(project, "30g", NOW);
     const facts = buildFacts(overview);
-    const summary = summarize({ projectId: project.id, range: resolveRange("30g", NOW) });
+    const summary = await summarize({ projectId: project.id, range: resolveRange("30g", NOW) });
     expect(facts).toContain(`Toplam içerik: ${summary.total}`);
     expect(facts).toContain(`olumsuz ${summary.negative}`);
     expect(facts).toContain("Platformlar:");
@@ -107,18 +107,18 @@ describe("uyarı duyarlılığı", () => {
     expect(detectAnomalies(mild, { ...DAILY_OPTIONS, sensitivity: "high" })).toHaveLength(1);
   });
 
-  it("varsayılan duyarlılık ortadır ve demo verisinde sıralama korunur", () => {
+  it("varsayılan duyarlılık ortadır ve demo verisinde sıralama korunur", async () => {
     const range = resolveRange("30g", NOW);
-    const medium = findAnomalies(project.id, range, "day");
-    expect(findAnomalies(project.id, range, "day", "medium")).toEqual(medium);
-    expect(findAnomalies(project.id, range, "day", "low").length).toBeLessThanOrEqual(medium.length);
-    expect(findAnomalies(project.id, range, "day", "high").length).toBeGreaterThanOrEqual(medium.length);
+    const medium = await findAnomalies(project.id, range, "day");
+    expect(await findAnomalies(project.id, range, "day", "medium")).toEqual(medium);
+    expect((await findAnomalies(project.id, range, "day", "low")).length).toBeLessThanOrEqual(medium.length);
+    expect((await findAnomalies(project.id, range, "day", "high")).length).toBeGreaterThanOrEqual(medium.length);
   });
 });
 
 describe("platforma göre ton seyri", () => {
-  it("platform toplamları özete eşittir", () => {
-    const analysis = getAnalysis(project, "30g", NOW);
+  it("platform toplamları özete eşittir", async () => {
+    const analysis = await getAnalysis(project, "30g", NOW);
     const total = analysis.platformTrend.reduce((sum, row) => sum + row.total, 0);
     const negative = analysis.platformTrend.reduce((sum, row) => sum + row.points.reduce((inner, point) => inner + point.negative, 0), 0);
     expect(total).toBe(analysis.summary.total);

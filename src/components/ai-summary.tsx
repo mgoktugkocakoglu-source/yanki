@@ -22,9 +22,9 @@ function evidenceHref(projectId: string, rangeKey: RangeKey, mentionId: string):
   return `${base}${base.includes("?") ? "&" : "?"}secili=${encodeURIComponent(mentionId)}`;
 }
 
-export function AiSummaryPanel({ projectId, rangeKey, now }: { projectId: string; rangeKey: RangeKey; now: number }) {
+export async function AiSummaryPanel({ projectId, rangeKey, now }: { projectId: string; rangeKey: RangeKey; now: number }) {
   const provider = getAiProvider();
-  const latest = getLatestAiSummary(projectId, rangeKey);
+  const latest = await getLatestAiSummary(projectId, rangeKey);
 
   if (!provider && !latest) {
     return (

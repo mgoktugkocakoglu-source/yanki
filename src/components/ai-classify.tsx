@@ -10,9 +10,9 @@ import { AiClassifyButton } from "./forms/ai-classify-button";
  * Duygu dağılımının altındaki not: tonun neyle belirlendiğini söyler ve
  * sağlayıcı açıksa dil modeliyle sınıflandırmayı başlatır.
  */
-export function AiClassifyNote({ projectId, rangeKey, range, total }: { projectId: string; rangeKey: RangeKey; range: TimeRange; total: number }) {
+export async function AiClassifyNote({ projectId, rangeKey, range, total }: { projectId: string; rangeKey: RangeKey; range: TimeRange; total: number }) {
   const provider = getAiProvider();
-  const classified = countAiClassified({ projectId, range });
+  const classified = await countAiClassified({ projectId, range });
   const remaining = total - classified;
 
   return (

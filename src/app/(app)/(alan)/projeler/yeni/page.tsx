@@ -13,7 +13,7 @@ export default async function NewProjectPage() {
   await requestStart();
   await requireUser();
   // Yeni projeler her zaman canlı çalışma alanında açılır; demo alanları salt örnektir.
-  const liveWorkspace = getWorkspaceByKind("live");
+  const liveWorkspace = await getWorkspaceByKind("live");
 
   if (!liveWorkspace) {
     return (

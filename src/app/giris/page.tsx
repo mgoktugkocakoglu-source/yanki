@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Giriş" };
 /** Giriş ekranı. Hiç kullanıcı yoksa sistem yöneticisi hesabının oluşturulduğu kurulum formu gösterilir. */
 async function Entry() {
   await requestStart();
-  if (!authEnabled()) {
+  if (!await authEnabled()) {
     return (
       <>
         <h1 className="text-[1.375rem] font-semibold tracking-[-0.02em]">Sistem yöneticisi hesabı</h1>

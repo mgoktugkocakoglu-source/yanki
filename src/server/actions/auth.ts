@@ -73,14 +73,14 @@ function recordFailure(email: string, now: number): void {
 /* ── Giriş, çıkış, ilk kurulum ────────────────────────────────────────── */
 
 export async function loginAction(_previous: AuthState, formData: FormData): Promise<AuthState> {
-  ensureSeeded();
+  await ensureSeeded();
   const email = normalizeEmail(text(formData, "email"));
   const password = text(formData, "password");
   const now = Date.now();
   if (!email || !password) return fail("E-posta ve parolanızı yazın.");
   if (isLocked(email, now)) return fail("Çok fazla hatalı deneme yapıldı. 15 dakika sonra yeniden deneyin.");
 
-  const credentials = getCredentials(email);
+  const credentials = await getCredentials(email);
   // Kullanıcı yoksa da aynı süre harcansın ve aynı ileti dönsün: hangi e-postanın kayıtlı olduğu sızmaz.
   const valid = credentials ? verifyPassword(password, credentials.passwordHash) : (verifyPassword(password, hashPassword("yer-tutucu-parola")), false);
   if (!credentials || !valid || credentials.user.disabledAt !== null) {
@@ -88,14 +88,14 @@ export async function loginAction(_previous: AuthState, formData: FormData): Pro
     return fail("E-posta ya da parola hatalı.");
   }
   const { user } = credentials;
-  if (user.orgId !== null && getOrganization(user.orgId)?.suspendedAt !== null) {
+  if (user.orgId !== null && (await getOrganization(user.orgId))?.suspendedAt !== null) {
     return fail("Kurumunuzun erişimi askıya alınmış. Kurum yöneticinize başvurun.");
   }
 
   failures.delete(email);
-  touchLogin(user.id, now);
+  await touchLogin(user.id, now);
   await startSession(user.id);
-  recordAudit({ workspaceId: null, action: "oturum.açıldı", objectType: "kullanıcı", objectId: user.id, actor: user.email });
+  await recordAudit({ workspaceId: null, action: "oturum.açıldı", objectType: "kullanıcı", objectId: user.id, actor: user.email });
   redirect(homePath(user));
 }
 
@@ -106,8 +106,8 @@ export async function logoutAction(): Promise<void> {
 
 /** İlk sistem yöneticisi: yalnızca hiç kullanıcı yokken çalışır. */
 export async function setupSysadminAction(_previous: AuthState, formData: FormData): Promise<AuthState> {
-  ensureSeeded();
-  if (countUsers() > 0) return fail("Kurulum zaten yapılmış. Giriş yapın.");
+  await ensureSeeded();
+  if (await countUsers() > 0) return fail("Kurulum zaten yapılmış. Giriş yapın.");
 
   const parsed = z.object({ name: nameSchema, email: emailSchema, password: passwordSchema }).safeParse({
     name: text(formData, "name"),
@@ -117,11 +117,11 @@ export async function setupSysadminAction(_previous: AuthState, formData: FormDa
   if (!parsed.success) return fail(parsed.error.issues[0].message);
 
   const now = Date.now();
-  const user = createUser({ ...parsed.data, role: "sysadmin", orgId: null, passwordHash: hashPassword(parsed.data.password), credits: 0 }, now);
+  const user = await createUser({ ...parsed.data, role: "sysadmin", orgId: null, passwordHash: hashPassword(parsed.data.password), credits: 0 }, now);
   if (!user) return fail("Bu e-posta zaten kayıtlı.");
-  touchLogin(user.id, now);
+  await touchLogin(user.id, now);
   await startSession(user.id);
-  recordAudit({ workspaceId: null, action: "kullanıcı.oluşturuldu", objectType: "kullanıcı", objectId: user.id, detail: "ilk sistem yöneticisi", actor: user.email });
+  await recordAudit({ workspaceId: null, action: "kullanıcı.oluşturuldu", objectType: "kullanıcı", objectId: user.id, detail: "ilk sistem yöneticisi", actor: user.email });
   redirect("/sistem");
 }
 
@@ -153,44 +153,44 @@ export async function createOrganizationAction(_previous: AuthState, formData: F
   const pool = creditSchema.safeParse(text(formData, "pool") || "0");
   if (!pool.success) return fail(pool.error.issues[0].message);
 
-  const organization = createOrganization(input, pool.data, viewer.email, Date.now());
+  const organization = await createOrganization(input, pool.data, viewer.email, Date.now());
   if (!organization) return fail("Bu adda bir kurum zaten var.");
-  recordAudit({ workspaceId: null, action: "kurum.oluşturuldu", objectType: "kurum", objectId: organization.id, detail: `${organization.name}; havuz ${pool.data}`, actor: viewer.email, orgId: organization.id });
+  await recordAudit({ workspaceId: null, action: "kurum.oluşturuldu", objectType: "kurum", objectId: organization.id, detail: `${organization.name}; havuz ${pool.data}`, actor: viewer.email, orgId: organization.id });
   redirect(`/sistem/kurum/${organization.id}`);
 }
 
 export async function updateOrganizationAction(_previous: AuthState, formData: FormData): Promise<AuthState> {
   const viewer = await signedIn();
   if (!isSysadmin(viewer)) return fail(DENIED);
-  const organization = getOrganization(text(formData, "orgId"));
+  const organization = await getOrganization(text(formData, "orgId"));
   if (!organization) return fail("Kurum bulunamadı.");
   const input = readOrganization(formData);
   if (!input.ok) return fail(input.message);
-  if (input.seatLimit !== null && input.seatLimit < seatsInUse(organization.id, Date.now())) {
+  if (input.seatLimit !== null && input.seatLimit < await seatsInUse(organization.id, Date.now())) {
     return fail("Koltuk sayısı, şu an dolu olan koltuklardan az olamaz. Önce hesap kapatın ya da davet iptal edin.");
   }
 
-  if (!updateOrganization(organization.id, input)) return fail("Bu adda başka bir kurum var.");
-  recordAudit({
-    workspaceId: null,
-    action: "kurum.güncellendi",
-    objectType: "kurum",
-    objectId: organization.id,
-    detail: `koltuk ${input.seatLimit ?? "sınırsız"}; alan adları ${input.domains.join(", ") || "serbest"}`,
-    actor: viewer.email,
-    orgId: organization.id,
-  });
+  if (!await updateOrganization(organization.id, input)) return fail("Bu adda başka bir kurum var.");
+  await recordAudit({
+        workspaceId: null,
+        action: "kurum.güncellendi",
+        objectType: "kurum",
+        objectId: organization.id,
+        detail: `koltuk ${input.seatLimit ?? "sınırsız"}; alan adları ${input.domains.join(", ") || "serbest"}`,
+        actor: viewer.email,
+        orgId: organization.id,
+      });
   refresh();
   return done("Kurum bilgileri kaydedildi.");
 }
 
 export async function setOrganizationSuspendedAction(formData: FormData): Promise<void> {
   const viewer = await signedIn();
-  const organization = getOrganization(text(formData, "orgId"));
+  const organization = await getOrganization(text(formData, "orgId"));
   if (!isSysadmin(viewer) || !organization) return;
   const suspended = formData.get("suspended") === "1";
-  setOrganizationSuspended(organization.id, suspended, Date.now());
-  recordAudit({ workspaceId: null, action: suspended ? "kurum.askıya-alındı" : "kurum.açıldı", objectType: "kurum", objectId: organization.id, actor: viewer.email, orgId: organization.id });
+  await setOrganizationSuspended(organization.id, suspended, Date.now());
+  await recordAudit({ workspaceId: null, action: suspended ? "kurum.askıya-alındı" : "kurum.açıldı", objectType: "kurum", objectId: organization.id, actor: viewer.email, orgId: organization.id });
   refresh();
 }
 
@@ -198,15 +198,15 @@ export async function setOrganizationSuspendedAction(formData: FormData): Promis
 export async function addPoolCreditsAction(_previous: AuthState, formData: FormData): Promise<AuthState> {
   const viewer = await signedIn();
   if (!isSysadmin(viewer)) return fail(DENIED);
-  const organization = getOrganization(text(formData, "orgId"));
+  const organization = await getOrganization(text(formData, "orgId"));
   if (!organization) return fail("Kurum bulunamadı.");
   const amount = amountSchema.safeParse(text(formData, "amount"));
   if (!amount.success) return fail(amount.error.issues[0].message);
 
-  if (!adjustPool(organization.id, amount.data, amount.data > 0 ? "sistem yüklemesi" : "sistem düzeltmesi", viewer.email, Date.now())) {
+  if (!await adjustPool(organization.id, amount.data, amount.data > 0 ? "sistem yüklemesi" : "sistem düzeltmesi", viewer.email, Date.now())) {
     return fail(`Havuzda yalnızca ${organization.creditPool} kredi var; bundan fazlası geri alınamaz.`);
   }
-  recordAudit({ workspaceId: null, action: "havuz.değişti", objectType: "kurum", objectId: organization.id, detail: `${amount.data > 0 ? "+" : ""}${amount.data}`, actor: viewer.email, orgId: organization.id });
+  await recordAudit({ workspaceId: null, action: "havuz.değişti", objectType: "kurum", objectId: organization.id, detail: `${amount.data > 0 ? "+" : ""}${amount.data}`, actor: viewer.email, orgId: organization.id });
   refresh();
   return done(amount.data > 0 ? `${amount.data} kredi havuza yüklendi.` : `${-amount.data} kredi havuzdan geri alındı.`);
 }
@@ -217,20 +217,20 @@ export async function addPoolCreditsAction(_previous: AuthState, formData: FormD
 export async function setPermissionsAction(_previous: AuthState, formData: FormData): Promise<AuthState> {
   const viewer = await signedIn();
   if (!isSysadmin(viewer)) return fail(DENIED);
-  const target = getUser(text(formData, "userId"));
+  const target = await getUser(text(formData, "userId"));
   if (!target || target.role !== "admin") return fail("Kurum yöneticisi bulunamadı.");
 
   const permissions = cleanPermissions(formData.getAll("permissions"));
-  setPermissions(target.id, permissions, viewer.email, Date.now());
-  recordAudit({
-    workspaceId: null,
-    action: "yetki.değişti",
-    objectType: "kullanıcı",
-    objectId: target.id,
-    detail: `${target.email}: ${permissions.map((permission) => PERMISSION_INFO[permission].label).join(", ") || "yetki yok"}`,
-    actor: viewer.email,
-    orgId: target.orgId,
-  });
+  await setPermissions(target.id, permissions, viewer.email, Date.now());
+  await recordAudit({
+        workspaceId: null,
+        action: "yetki.değişti",
+        objectType: "kullanıcı",
+        objectId: target.id,
+        detail: `${target.email}: ${permissions.map((permission) => PERMISSION_INFO[permission].label).join(", ") || "yetki yok"}`,
+        actor: viewer.email,
+        orgId: target.orgId,
+      });
   refresh();
   return done("Yetkiler kaydedildi.");
 }
@@ -238,11 +238,11 @@ export async function setPermissionsAction(_previous: AuthState, formData: FormD
 /** Kullanıcıyı kurum yöneticisi yapar ya da yöneticilikten alır. */
 export async function setUserRoleAction(formData: FormData): Promise<void> {
   const viewer = await signedIn();
-  const target = getUser(text(formData, "userId"));
+  const target = await getUser(text(formData, "userId"));
   const role = z.enum(["admin", "analyst"]).safeParse(text(formData, "role"));
   if (!isSysadmin(viewer) || !target || !role.success) return;
-  if (!setUserRole(target.id, role.data)) return;
-  recordAudit({ workspaceId: null, action: "rol.değişti", objectType: "kullanıcı", objectId: target.id, detail: `${target.email}: ${ROLE_LABELS[role.data]}`, actor: viewer.email, orgId: target.orgId });
+  if (!await setUserRole(target.id, role.data)) return;
+  await recordAudit({ workspaceId: null, action: "rol.değişti", objectType: "kullanıcı", objectId: target.id, detail: `${target.email}: ${ROLE_LABELS[role.data]}`, actor: viewer.email, orgId: target.orgId });
   refresh();
 }
 
@@ -265,7 +265,7 @@ export async function inviteAction(_previous: AuthState, formData: FormData): Pr
 
   // Kurum yöneticisi yalnızca kendi kurumuna davet eder; formdaki kurum kimliğine güvenilmez.
   const orgId = isSysadmin(viewer) ? text(formData, "orgId") : (viewer.orgId ?? "");
-  const organization = getOrganization(orgId);
+  const organization = await getOrganization(orgId);
   if (!organization || !canInvite(viewer, organization.id, parsed.data.role)) return fail(DENIED);
   if (organization.suspendedAt !== null) return fail("Askıdaki kuruma davet gönderilemez.");
   if (!emailAllowed(organization.domains, parsed.data.email)) {
@@ -275,49 +275,49 @@ export async function inviteAction(_previous: AuthState, formData: FormData): Pr
 
   // Yönetici yetkilerini yalnızca sistem yöneticisi belirler.
   const permissions = parsed.data.role === "admin" && isSysadmin(viewer) ? cleanPermissions(formData.getAll("permissions")) : [];
-  const result = createInvitation({ orgId: organization.id, ...parsed.data, permissions, invitedBy: viewer.email }, Date.now());
+  const result = await createInvitation({ orgId: organization.id, ...parsed.data, permissions, invitedBy: viewer.email }, Date.now());
   if (!result.ok) return fail(INVITE_FAILURES[result.reason]);
 
-  recordAudit({
-    workspaceId: null,
-    action: "davet.oluşturuldu",
-    objectType: "davet",
-    objectId: result.invitation.id,
-    detail: `${result.invitation.email}; ${ROLE_LABELS[result.invitation.role]}; ${result.invitation.credits} kredi`,
-    actor: viewer.email,
-    orgId: organization.id,
-  });
+  await recordAudit({
+        workspaceId: null,
+        action: "davet.oluşturuldu",
+        objectType: "davet",
+        objectId: result.invitation.id,
+        detail: `${result.invitation.email}; ${ROLE_LABELS[result.invitation.role]}; ${result.invitation.credits} kredi`,
+        actor: viewer.email,
+        orgId: organization.id,
+      });
   refresh();
   return done(`${result.invitation.email} yetkilendirildi. Bağlantı 7 gün geçerlidir ve yalnızca şimdi gösterilir.`, `/davet/${result.token}`);
 }
 
 export async function revokeInvitationAction(_previous: AuthState, formData: FormData): Promise<AuthState> {
   const viewer = await signedIn();
-  const invitation = getInvitation(text(formData, "invitationId"));
+  const invitation = await getInvitation(text(formData, "invitationId"));
   if (!viewer || !invitation || !canInvite(viewer, invitation.orgId, invitation.role)) return fail(DENIED);
-  if (!revokeInvitation(invitation.id, viewer.email, Date.now())) return fail("Davet zaten sonuçlanmış.");
-  recordAudit({ workspaceId: null, action: "davet.iptal", objectType: "davet", objectId: invitation.id, detail: invitation.email, actor: viewer.email, orgId: invitation.orgId });
+  if (!await revokeInvitation(invitation.id, viewer.email, Date.now())) return fail("Davet zaten sonuçlanmış.");
+  await recordAudit({ workspaceId: null, action: "davet.iptal", objectType: "davet", objectId: invitation.id, detail: invitation.email, actor: viewer.email, orgId: invitation.orgId });
   refresh();
   return done("Davet iptal edildi.");
 }
 
 /** Davet bağlantısını açan kişi parolasını belirler; hesabı o anda açılır. */
 export async function acceptInvitationAction(_previous: AuthState, formData: FormData): Promise<AuthState> {
-  ensureSeeded();
+  await ensureSeeded();
   const token = text(formData, "token");
   const password = passwordSchema.safeParse(text(formData, "password"));
   if (!password.success) return fail(password.error.issues[0].message);
   if (password.data !== text(formData, "passwordRepeat")) return fail("Parolalar aynı değil.");
 
   const now = Date.now();
-  const invitation = getInvitationByToken(token, now);
-  if (!invitation || getOrganization(invitation.orgId)?.suspendedAt !== null) return fail("Bu davet bağlantısı geçerli değil ya da süresi dolmuş. Yöneticinizden yeni bir davet isteyin.");
-  const user = acceptInvitation(token, hashPassword(password.data), now);
+  const invitation = await getInvitationByToken(token, now);
+  if (!invitation || (await getOrganization(invitation.orgId))?.suspendedAt !== null) return fail("Bu davet bağlantısı geçerli değil ya da süresi dolmuş. Yöneticinizden yeni bir davet isteyin.");
+  const user = await acceptInvitation(token, hashPassword(password.data), now);
   if (!user) return fail("Bu davet bağlantısı geçerli değil ya da süresi dolmuş. Yöneticinizden yeni bir davet isteyin.");
 
-  touchLogin(user.id, now);
+  await touchLogin(user.id, now);
   await startSession(user.id);
-  recordAudit({ workspaceId: null, action: "davet.kabul", objectType: "kullanıcı", objectId: user.id, detail: ROLE_LABELS[user.role], actor: user.email });
+  await recordAudit({ workspaceId: null, action: "davet.kabul", objectType: "kullanıcı", objectId: user.id, detail: ROLE_LABELS[user.role], actor: user.email });
   redirect(homePath(user));
 }
 
@@ -326,16 +326,16 @@ export async function acceptInvitationAction(_previous: AuthState, formData: For
 /** Kurum havuzundan kullanıcıya kredi aktarır; eksi tutar krediyi havuza geri alır. */
 export async function assignCreditsAction(_previous: AuthState, formData: FormData): Promise<AuthState> {
   const viewer = await signedIn();
-  const target = getUser(text(formData, "userId"));
+  const target = await getUser(text(formData, "userId"));
   if (!viewer || !target || !canAssignCredits(viewer, target) || target.orgId === null) return fail(DENIED);
   const amount = amountSchema.safeParse(text(formData, "amount"));
   if (!amount.success) return fail(amount.error.issues[0].message);
 
-  const result = transferCredits(target.orgId, target.id, amount.data, viewer.email, Date.now());
+  const result = await transferCredits(target.orgId, target.id, amount.data, viewer.email, Date.now());
   if (result === "pool") return fail("Kurum havuzunda bu kadar kredi yok.");
   if (result === "balance") return fail(`Kullanıcının yalnızca ${target.credits} kredisi var.`);
   if (result !== "ok") return fail("Kredi aktarılamadı.");
-  recordAudit({ workspaceId: null, action: "kredi.değişti", objectType: "kullanıcı", objectId: target.id, detail: `${target.email}: ${amount.data > 0 ? "+" : ""}${amount.data}`, actor: viewer.email, orgId: target.orgId });
+  await recordAudit({ workspaceId: null, action: "kredi.değişti", objectType: "kullanıcı", objectId: target.id, detail: `${target.email}: ${amount.data > 0 ? "+" : ""}${amount.data}`, actor: viewer.email, orgId: target.orgId });
   refresh();
   return done(amount.data > 0 ? `${amount.data} kredi verildi.` : `${-amount.data} kredi havuza alındı.`);
 }
@@ -344,17 +344,17 @@ export async function assignCreditsAction(_previous: AuthState, formData: FormDa
 
 export async function setUserDisabledAction(_previous: AuthState, formData: FormData): Promise<AuthState> {
   const viewer = await signedIn();
-  const target = getUser(text(formData, "userId"));
+  const target = await getUser(text(formData, "userId"));
   if (!viewer || !target || !canManageAccount(viewer, target)) return fail(DENIED);
   const disabled = formData.get("disabled") === "1";
   const now = Date.now();
   if (!disabled && target.orgId !== null) {
-    const limit = getOrganization(target.orgId)?.seatLimit ?? null;
-    if (limit !== null && seatsInUse(target.orgId, now) >= limit) return fail(INVITE_FAILURES.seats);
+    const limit = (await getOrganization(target.orgId))?.seatLimit ?? null;
+    if (limit !== null && await seatsInUse(target.orgId, now) >= limit) return fail(INVITE_FAILURES.seats);
   }
 
-  setUserDisabled(target.id, disabled, now);
-  recordAudit({ workspaceId: null, action: disabled ? "kullanıcı.kapatıldı" : "kullanıcı.açıldı", objectType: "kullanıcı", objectId: target.id, detail: target.email, actor: viewer.email, orgId: target.orgId });
+  await setUserDisabled(target.id, disabled, now);
+  await recordAudit({ workspaceId: null, action: disabled ? "kullanıcı.kapatıldı" : "kullanıcı.açıldı", objectType: "kullanıcı", objectId: target.id, detail: target.email, actor: viewer.email, orgId: target.orgId });
   refresh();
   return done(disabled ? "Hesap kapatıldı." : "Hesap yeniden açıldı.");
 }
@@ -362,29 +362,29 @@ export async function setUserDisabledAction(_previous: AuthState, formData: Form
 /** Kullanıcı için tek kullanımlık parola sıfırlama bağlantısı üretir. */
 export async function createResetLinkAction(_previous: AuthState, formData: FormData): Promise<AuthState> {
   const viewer = await signedIn();
-  const target = getUser(text(formData, "userId"));
+  const target = await getUser(text(formData, "userId"));
   if (!viewer || !target || !canManageAccount(viewer, target)) return fail(DENIED);
   if (target.disabledAt !== null) return fail("Kapalı hesap için bağlantı üretilemez.");
 
-  const token = createPasswordReset(target.id, viewer.email, Date.now());
-  recordAudit({ workspaceId: null, action: "parola.sıfırlama-bağlantısı", objectType: "kullanıcı", objectId: target.id, detail: target.email, actor: viewer.email, orgId: target.orgId });
+  const token = await createPasswordReset(target.id, viewer.email, Date.now());
+  await recordAudit({ workspaceId: null, action: "parola.sıfırlama-bağlantısı", objectType: "kullanıcı", objectId: target.id, detail: target.email, actor: viewer.email, orgId: target.orgId });
   return done("Bağlantı 24 saat geçerlidir ve yalnızca şimdi gösterilir.", `/parola/${token}`);
 }
 
 export async function resetPasswordAction(_previous: AuthState, formData: FormData): Promise<AuthState> {
-  ensureSeeded();
+  await ensureSeeded();
   const token = text(formData, "token");
   const password = passwordSchema.safeParse(text(formData, "password"));
   if (!password.success) return fail(password.error.issues[0].message);
   if (password.data !== text(formData, "passwordRepeat")) return fail("Parolalar aynı değil.");
 
   const now = Date.now();
-  const target = getResetTarget(token, now);
+  const target = await getResetTarget(token, now);
   if (!target) return fail("Bu bağlantı geçerli değil ya da süresi dolmuş. Yöneticinizden yenisini isteyin.");
-  setPassword(target.userId, hashPassword(password.data), now);
-  markResetUsed(token, now);
+  await setPassword(target.userId, hashPassword(password.data), now);
+  await markResetUsed(token, now);
   failures.delete(target.email);
-  recordAudit({ workspaceId: null, action: "parola.sıfırlandı", objectType: "kullanıcı", objectId: target.userId, actor: target.email });
+  await recordAudit({ workspaceId: null, action: "parola.sıfırlandı", objectType: "kullanıcı", objectId: target.userId, actor: target.email });
   redirect(LOGIN_PATH);
 }
 
@@ -396,11 +396,11 @@ export async function changePasswordAction(_previous: AuthState, formData: FormD
   if (!password.success) return fail(password.error.issues[0].message);
   if (password.data !== text(formData, "passwordRepeat")) return fail("Yeni parolalar aynı değil.");
 
-  const stored = getPasswordHash(viewer.id);
+  const stored = await getPasswordHash(viewer.id);
   if (!stored || !verifyPassword(text(formData, "current"), stored)) return fail("Mevcut parolanız hatalı.");
   if (verifyPassword(password.data, stored)) return fail("Yeni parola eskisinden farklı olmalı.");
 
-  setPassword(viewer.id, hashPassword(password.data), Date.now(), await currentToken());
-  recordAudit({ workspaceId: null, action: "parola.değişti", objectType: "kullanıcı", objectId: viewer.id, actor: viewer.email });
+  await setPassword(viewer.id, hashPassword(password.data), Date.now(), await currentToken());
+  await recordAudit({ workspaceId: null, action: "parola.değişti", objectType: "kullanıcı", objectId: viewer.id, actor: viewer.email });
   return done("Parolanız değişti. Diğer cihazlardaki oturumlarınız kapatıldı.");
 }

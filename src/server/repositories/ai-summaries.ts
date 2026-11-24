@@ -49,42 +49,42 @@ interface AiSummaryRow {
   created_at: number;
 }
 
-export function saveAiSummary({ workspaceId, ...input }: NewAiSummary): AiSummary {
+export async function saveAiSummary({ workspaceId, ...input }: NewAiSummary): Promise<AiSummary> {
   const id = randomUUID();
-  execute(
-    `INSERT INTO ai_summaries
+  await execute(
+        `INSERT INTO ai_summaries
        (id, workspace_id, project_id, range_key, range_from, range_to, provider, model, summary, themes,
         mentions_sent, mentions_total, input_tokens, output_tokens, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      id,
-      workspaceId,
-      input.projectId,
-      input.rangeKey,
-      input.range.from,
-      input.range.to,
-      input.provider,
-      input.model,
-      input.summary,
-      JSON.stringify(input.themes),
-      input.mentionsSent,
-      input.mentionsTotal,
-      input.inputTokens,
-      input.outputTokens,
-      input.createdAt,
-    ],
-  );
+        [
+          id,
+          workspaceId,
+          input.projectId,
+          input.rangeKey,
+          input.range.from,
+          input.range.to,
+          input.provider,
+          input.model,
+          input.summary,
+          JSON.stringify(input.themes),
+          input.mentionsSent,
+          input.mentionsTotal,
+          input.inputTokens,
+          input.outputTokens,
+          input.createdAt,
+        ],
+      );
   return { ...input, id };
 }
 
 /** Projenin seçili dönem türü için en son özeti. */
-export function getLatestAiSummary(projectId: string, rangeKey: RangeKey): AiSummary | null {
-  const row = queryOne<AiSummaryRow>(
-    `SELECT id, project_id, range_key, range_from, range_to, provider, model, summary, themes,
+export async function getLatestAiSummary(projectId: string, rangeKey: RangeKey): Promise<AiSummary | null> {
+  const row = await queryOne<AiSummaryRow>(
+      `SELECT id, project_id, range_key, range_from, range_to, provider, model, summary, themes,
             mentions_sent, mentions_total, input_tokens, output_tokens, created_at
      FROM ai_summaries WHERE project_id = ? AND range_key = ? ORDER BY created_at DESC LIMIT 1`,
-    [projectId, rangeKey],
-  );
+      [projectId, rangeKey],
+    );
   if (!row) return null;
   return {
     id: row.id,

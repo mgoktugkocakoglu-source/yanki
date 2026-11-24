@@ -41,7 +41,7 @@ export function MentionActions({ mentionId, modelSentiment, override, isIrreleva
 
   const chooseTone = (sentiment: Sentiment | null) => {
     setOpen(false);
-    startTransition(() => setToneAction(mentionId, sentiment));
+    startTransition(async () => setToneAction(mentionId, sentiment));
   };
 
   const linkClass = "inline-flex items-center gap-1 rounded px-1.5 py-1 text-[0.8125rem] text-ink-soft hover:bg-sunken hover:text-ink disabled:opacity-50";
@@ -85,7 +85,7 @@ export function MentionActions({ mentionId, modelSentiment, override, isIrreleva
         type="button"
         className={linkClass}
         disabled={pending}
-        onClick={() => startTransition(() => setIrrelevantAction(mentionId, !isIrrelevant))}
+        onClick={() => startTransition(async () => setIrrelevantAction(mentionId, !isIrrelevant))}
         title={isIrrelevant ? "Bu içeriği yeniden sayımlara dahil et" : "Bu içerik projeyle ilgili değil; sayımlardan çıkar"}
       >
         {isIrrelevant ? <Undo2 className="h-3.5 w-3.5" aria-hidden="true" /> : <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />}
