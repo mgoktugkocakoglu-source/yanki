@@ -1,0 +1,306 @@
+@import "tailwindcss";
+
+/*
+ * Yankı tasarım sistemi
+ * ─────────────────────
+ * Açık, sade bir analiz arayüzü: beyaz yüzeyler, nötr griler, tek bir vurgu
+ * rengi (mavi). Ekranda renk taşıyan şey veridir; arayüzün kendisi geri durur.
+ * Safran yalnızca eşleşen kelimenin vurgusunda ve marka işaretinde kullanılır.
+ *
+ * Veri renkleri gözle seçilmedi; kategorik dizi ve ton çifti renk körlüğü
+ * benzetimi ve kontrast denetiminden geçirildi (beyaz yüzey üzerinde).
+ */
+
+:root {
+  /* yüzeyler */
+  --paper: #f6f7f9;
+  --surface: #ffffff;
+  --surface-sunken: #f9fafb;
+  --line: #e5e7eb;
+  --line-strong: #d1d5db;
+
+  /* mürekkep */
+  --ink: #17212b;
+  --ink-soft: #475467;
+  --ink-muted: #667085;
+
+  /* vurgu: mavi; safran yalnızca vurgulama için */
+  --brand: #2563eb;
+  --brand-strong: #1d4ed8;
+  --brand-wash: #eff6ff;
+  /* tanıtım sayfasındaki koyu bölüm */
+  --deep: #0a192f;
+  --on-brand: #ffffff;
+  --saffron: #e9a21b;
+  --saffron-ink: #8a5a00;
+  --saffron-wash: #fdeec9;
+
+  /* ton: iki zıt kutup + nötr orta nokta */
+  --positive: #0b9183;
+  --positive-ink: #076a60;
+  --positive-wash: #e3f4f1;
+  --negative: #d2452d;
+  --negative-ink: #a5301c;
+  --negative-wash: #fcebe7;
+  --neutral: #9ca3af;
+  --neutral-wash: #f3f4f6;
+
+  /* durum (yalnızca simge ve etiketle birlikte) */
+  --critical: #d03b3b;
+  --warning: #b45309;
+  --good: #0a8a0a;
+
+  /* kategorik dizi: karşılaştırılan projeler */
+  --series-1: #6a3f8a;
+  --series-2: #c98500;
+  --series-3: #2a78d6;
+  --series-4: #e0679a;
+  --series-5: #5f8a1f;
+
+  /* sıralı dizi: tek renk, açıktan koyuya (yoğunluk haritası) */
+  --seq-0: #f3f4f6;
+  --seq-1: #dbeafe;
+  --seq-2: #bfdbfe;
+  --seq-3: #93c5fd;
+  --seq-4: #60a5fa;
+  --seq-5: #3b82f6;
+  --seq-6: #2563eb;
+  --seq-7: #1e40af;
+
+  /* grafik iskeleti */
+  --grid: #eef0f3;
+  --axis: #d1d5db;
+
+  --glow: none;
+  --shadow-card: 0 1px 2px rgb(17 24 39 / 0.04);
+  /* tanıtım sitesindeki önizleme çerçevesi */
+  --shadow-preview: 0 24px 60px -28px rgb(10 25 47 / 0.35);
+  --shadow-pop: 0 12px 32px -12px rgb(17 24 39 / 0.22), 0 2px 6px -2px rgb(17 24 39 / 0.1);
+  color-scheme: light;
+}
+
+/* Komuta merkezi: yalnızca duvar ekranı görünümü koyudur. */
+.theme-dark {
+  --paper: #0f1117;
+  --surface: #171a22;
+  --surface-sunken: #1e222c;
+  --line: #2a2f3a;
+  --line-strong: #3b4150;
+  --ink: #f3f4f6;
+  --ink-soft: #c5c9d3;
+  --ink-muted: #8f96a3;
+  --brand: #818cf8;
+  --brand-strong: #a5b4fc;
+  --brand-wash: #23263d;
+  --on-brand: #0f1117;
+  --saffron: #f0b030;
+  --saffron-ink: #f0b030;
+  --saffron-wash: #3a2c10;
+  --positive: #19a892;
+  --positive-ink: #4cc7b4;
+  --positive-wash: #10302c;
+  --negative: #de5c47;
+  --negative-ink: #f0907f;
+  --negative-wash: #3a1a15;
+  --neutral: #8f96a3;
+  --neutral-wash: #262a35;
+  --critical: #e66767;
+  --warning: #f0b030;
+  --good: #3fbf3f;
+  --series-1: #a47bbe;
+  --series-2: #c98500;
+  --series-3: #3987e5;
+  --series-4: #d55181;
+  --series-5: #6f9e3a;
+  --grid: #232733;
+  --axis: #3b4150;
+  --shadow-pop: 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunken: var(--surface-sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-wash: var(--brand-wash);
+  --color-deep: var(--deep);
+  --color-saffron: var(--saffron);
+  --color-saffron-ink: var(--saffron-ink);
+  --color-saffron-wash: var(--saffron-wash);
+  --color-positive: var(--positive);
+  --color-positive-ink: var(--positive-ink);
+  --color-positive-wash: var(--positive-wash);
+  --color-negative: var(--negative);
+  --color-negative-ink: var(--negative-ink);
+  --color-negative-wash: var(--negative-wash);
+  --color-neutral: var(--neutral);
+  --color-neutral-wash: var(--neutral-wash);
+  --color-critical: var(--critical);
+  --color-warning: var(--warning);
+  --color-good: var(--good);
+
+  --font-sans: var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sans-face), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "Cascadia Mono", monospace;
+
+  --shadow-pop: var(--shadow-pop);
+}
+
+@layer base {
+  html {
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Klavye odağı her zaman görünür; fare tıklamasında görünmez. */
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  ::selection {
+    background: var(--saffron-wash);
+    color: var(--ink);
+  }
+
+  /* Eşleşen ifade: fosforlu kalem. */
+  mark {
+    background: linear-gradient(to top, var(--saffron-wash) 0 82%, transparent 82%);
+    color: inherit;
+    padding: 0 0.08em;
+    border-radius: 1px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Sayısal okumalar: sütunlarda hizalanan rakamlar. */
+  .reading {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /* Bülten cümlesi içindeki ölçüm: metnin akışını bozmadan öne çıkar. */
+  .briefing-reading {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    padding: 0.1em 0.38em 0.12em;
+    border-radius: 4px;
+    background: var(--brand-wash);
+    color: var(--brand-strong);
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background-color 120ms ease;
+  }
+  a.briefing-reading:hover {
+    background: color-mix(in oklab, var(--brand) 18%, var(--surface));
+  }
+  .briefing-reading[data-tone="negative"] {
+    background: var(--negative-wash);
+    color: var(--negative-ink);
+  }
+  .briefing-reading[data-tone="positive"] {
+    background: var(--positive-wash);
+    color: var(--positive-ink);
+  }
+
+  /* Bülten cümlesi içindeki ad (konu, tarih): altı çizili; sayı gibi kutulanmaz. */
+  .briefing-label {
+    color: var(--brand-strong);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklab, var(--brand) 40%, transparent);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.18em;
+  }
+  a.briefing-label:hover {
+    text-decoration-color: var(--brand);
+  }
+  .briefing-label[data-tone="negative"] {
+    color: var(--negative-ink);
+    text-decoration-color: color-mix(in oklab, var(--negative) 45%, transparent);
+  }
+
+  /* Yankı halkası: yükleme ve canlı akış göstergesi. */
+  .echo-pulse {
+    animation: echo-pulse 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+    transform-origin: center;
+    transform-box: fill-box;
+  }
+  .echo-pulse:nth-child(2) {
+    animation-delay: 0.8s;
+  }
+  .echo-pulse:nth-child(3) {
+    animation-delay: 1.6s;
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--line) 0%, var(--surface-sunken) 50%, var(--line) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-slide 1.6s ease-in-out infinite;
+    border-radius: 4px;
+  }
+
+  .rise-in {
+    animation: rise-in 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+}
+
+@keyframes echo-pulse {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes skeleton-slide {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

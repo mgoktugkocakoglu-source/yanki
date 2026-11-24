@@ -1,0 +1,35 @@
+# Yankı — çalışma kuralları
+
+@AGENTS.md
+
+Yankı, Türkçe öncelikli bir medya izleme ve sosyal dinleme platformudur. Genel bilgi ve mimari için `README.md`, araştırma dayanakları için `docs/ARASTIRMA.md`.
+
+## Komutlar
+
+- `npm run dev` — geliştirme sunucusu
+- `npm test` — testler (bellek içi veritabanı kullanır; `data/` dosyasına dokunmaz)
+- `npm run lint` ve `npm run typecheck` — her değişiklikten sonra ikisi de temiz olmalı
+- `npm run kaynak-dene -- "ifade"` — bağlayıcıları canlı kaynaklara karşı dener
+
+## Değişmez kurallar
+
+- **Dil.** Arayüz metinleri, kod yorumları ve test adları Türkçedir. Tanımlayıcılar (değişken, işlev, dosya adı) İngilizcedir; adres çubuğundaki yollar ve parametreler Türkçedir (`/proje/[id]/bahsetmeler?q=…&d=30g`).
+- **Sahte veri canlı gibi sunulmaz.** Erişimi olmayan kaynak "planlanan" olarak listelenir (`server/collectors/registry.ts`). Demo verisi yalnızca demo çalışma alanlarında durur ve `is_demo` ile işaretlidir.
+- **Sayı uydurulmaz.** Kaynak bir ölçümü vermiyorsa alan `null` kalır ve arayüz bunu söyler (erişim, etkileşim, önceki dönem karşılaştırması).
+- **Eşleşme kuralları tek yerdedir.** Metin eşleşmesiyle ilgili her değişiklik `lib/query/matcher.ts` ve `lib/text/turkish.ts` içinde yapılır; SQL derleyici bu işlevleri yeniden yazmaz, çağırır. `tests/pipeline.test.ts` içindeki "SQL derleyici ile bellek içi eşleştirici aynı sonucu verir" testi bunu korur.
+- **Tüm okumalar `buildWhere` süzgecinden geçer.** Yeni bir analitik sorgu yazarken kendi `WHERE` cümlenizi kurmayın.
+- **Kullanıcı girdisi SQL metnine girmez.** Yalnızca parametre; boyut ve kova ifadeleri sabit listelerden seçilir.
+- **Dış içerik düz metindir.** Kaynaklardan gelen metin hiçbir zaman HTML olarak basılmaz.
+- **Her metriğin tanımı vardır.** Yeni bir bileşik sayı eklerken formülünü `domain/metrics.ts` içine yazın ve arayüzde `MetricInfo` ile gösterin.
+
+## Next.js notları (16.4, Cache Components açık)
+
+- Sayfalar veriye dokunmadan önce `server/context.ts` içindeki `loadProjectContext`, `loadWorkspaceContext` ya da `requestStart` işlevlerinden birini çağırır. SQLite okumaları eşzamanlıdır; bu çağrı olmadan derleme anında çalışıp statik çıktıya gömülürler.
+- Her sayfa bölümünün kendi `loading.tsx` dosyası vardır; kardeş sayfalar arası geçişin anında olması buna bağlıdır.
+- Grafikler sunucu bileşenidir ve tarayıcıda betik çalıştırmaz; ipuçları CSS ile açılır. Etkileşim gerekiyorsa küçük bir istemci bileşeni ekleyin, grafiğin tamamını istemciye taşımayın.
+
+## Tasarım
+
+- Renkler `app/globals.css` içindeki belirteçlerden gelir; bileşenlerde sabit renk kodu yazılmaz.
+- Ton için iki zıt kutup + nötr kullanılır ve renk hiçbir zaman tek başına bilgi taşımaz (işaret + yazı). Kategorik dizi (projeler) ve ton çifti renk körlüğü benzetiminden geçirilmiştir; değiştirirseniz yeniden doğrulayın.
+- Safran yalnızca eşleşen kelimenin vurgusunda ve marka işaretinde kullanılır.
