@@ -27,7 +27,7 @@ export default async function NewProjectPage() {
     <PageContainer>
       <PageHeading
         title="Yeni proje"
-        lead={`Proje “${liveWorkspace.name}” içinde açılır ve gerçek kaynakları tarar. Kaydetmeden önce “Önizle” ile sorgunun ne getirdiğine bakın.`}
+        lead={`Proje “${liveWorkspace.name}” içinde açılır ve gerçek kaynakları tarar. Kaydetmeden önce “Önizle” ile aramanın ne getirdiğine bakın.`}
       />
       <Panel className="max-w-[64rem]">
         <ProjectForm

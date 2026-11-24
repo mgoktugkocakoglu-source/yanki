@@ -1,3 +1,4 @@
+import { QuerySummary } from "@/components/query-summary";
 import { SlidersHorizontal } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -12,7 +13,7 @@ import { requestStart } from "@/server/context";
 import { latestCollectedAt } from "@/server/repositories/mentions";
 import { summarize } from "@/server/repositories/metrics";
 import { listProjects } from "@/server/repositories/projects";
-import { getWorkspaceByKind, listWorkspaces } from "@/server/repositories/workspaces";
+import { getWorkspaceByKind } from "@/server/repositories/workspaces";
 import { connectorOptions } from "@/server/services/connector-options";
 
 export const metadata: Metadata = { title: "Arama" };
@@ -30,8 +31,6 @@ export default async function SearchPage() {
     usable: option.allowed,
     reason: option.allowed ? null : option.missingSetting ? "anahtar bekleniyor" : "bu kurulumda kapalı",
   }));
-  const demo = listWorkspaces().find((entry) => entry.kind === "demo");
-  const demoProject = demo ? listProjects(demo.id)[0] : undefined;
 
   return (
     <PageContainer>
@@ -50,11 +49,8 @@ export default async function SearchPage() {
         <Panel>
           <SearchBox platforms={platforms} />
           <p className="text-[0.8125rem] text-ink-muted">
-            Birden çok kelime yazarsanız hepsi birlikte aranır. Seçenek için <span className="reading text-ink-soft">VEYA</span>, öbek için tırnak, dışlamak için{" "}
-            <span className="reading text-ink-soft">DEĞİL</span> kullanın: <span className="reading text-ink-soft">(Brezilya VEYA Brazil) seçim*</span>
-          </p>
-          <p className="mt-2 text-[0.8125rem] text-ink-muted">
-            Ad, açıklama, konu başlıkları ve sorgu önizlemesiyle ayrıntılı kurulum için{" "}
+            Yazdığınız kelimelerin hepsi birlikte aranır; Türkçe ekler kendiliğinden yakalanır. Aynı konunun farklı yazımlarını virgülle ayırın: e-Devlet, edevlet. Kaynakları
+            ve ayrıntıları kendiniz belirlemek için{" "}
             <Link href="/projeler/yeni" className="font-medium text-brand-strong hover:underline">
               Proje kur
             </Link>
@@ -84,7 +80,7 @@ export default async function SearchPage() {
                         </span>
                       </div>
                       {project.description ? <p className="mt-1 text-ink-soft">{project.description}</p> : null}
-                      <p className="reading mt-3 line-clamp-2 rounded bg-sunken px-2.5 py-1.5 text-[0.8125rem] text-ink-soft">{project.query}</p>
+                      <QuerySummary query={project.query} className="mt-3" />
                       <p className="mt-3 text-[0.8125rem] text-ink-muted">
                         {collectedAt ? `Son içerik ${formatRelative(collectedAt, now)} toplandı` : "Henüz içerik toplanmadı; ilk tarama sürüyor olabilir"}
                       </p>
@@ -96,15 +92,6 @@ export default async function SearchPage() {
           )}
         </section>
 
-        {demoProject ? (
-          <p className="text-[0.875rem] text-ink-muted">
-            Panelin tüm ekranlarını dolu veriyle görmek için{" "}
-            <Link href={projectHref(demoProject.id)} className="font-medium text-brand-strong hover:underline">
-              kurgusal belediye örneğini
-            </Link>{" "}
-            açabilirsiniz.
-          </p>
-        ) : null}
       </div>
     </PageContainer>
   );

@@ -4,7 +4,8 @@ import { Sparkles } from "lucide-react";
 import { useActionState } from "react";
 import { formatNumber } from "@/lib/format";
 import type { RangeKey } from "@/lib/time";
-import { classifyMentionsAction, type FormState } from "@/server/actions";
+import { classifyMentionsAction } from "@/server/actions/ai";
+import { type FormState } from "@/server/actions/shared";
 import { BUTTON_SECONDARY } from "../ui";
 
 const INITIAL: FormState = { ok: false, message: "", errors: {} };

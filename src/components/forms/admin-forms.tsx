@@ -17,7 +17,7 @@ import {
   setUserDisabledAction,
   updateOrganizationAction,
   type AuthState,
-} from "@/server/auth-actions";
+} from "@/server/actions/auth";
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, INPUT } from "../ui";
 
 /** Yönetim panellerinin formları: kurum, yetki, davet, kredi ve parola. */

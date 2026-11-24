@@ -1,26 +1,26 @@
 import type { Project } from "@/domain/types";
 import { bucketStart } from "@/lib/time";
+import { config } from "../config";
 import { execute, queryOne } from "../db/client";
 import { buildMention, prepareProject } from "../pipeline/ingest";
 import { insertMentions, type NewMention } from "../repositories/mentions";
 import { createProject, listProjects, listTopics, replaceTopics } from "../repositories/projects";
 import { recordAudit } from "../repositories/runs";
 import { createWorkspace, listWorkspaces } from "../repositories/workspaces";
-import { PUBLIC_WORKSPACE } from "./corpus-public";
-import { generateRawItems } from "./generator";
-import type { DemoProjectSpec, DemoWorkspaceSpec } from "./types";
+import { PUBLIC_WORKSPACE } from "../fixtures/corpus-public";
+import { generateRawItems } from "../fixtures/generator";
+import type { DemoProjectSpec, DemoWorkspaceSpec } from "../fixtures/types";
 
 /**
- * İlk çalıştırmada veritabanını kurar: bir demo çalışma alanı (kurgusal
- * belediye verisiyle) ve canlı çalışma alanı. Gündem projeleri canlı alanda
- * gerçek kaynaklardan toplanır (bkz. `agenda.ts`). Demo verisi ayrı çalışma
- * alanlarında durur ve her kayıt `is_demo` ile işaretlidir; canlı veriyle
- * hiçbir zaman karışmaz.
+ * İlk çalıştırmada canlı çalışma alanını kurar. Gündem konuları bu alanda
+ * gerçek kaynaklardan toplanır (bkz. `agenda.ts`).
  *
- * Demo içerikleri "bugün"e göre üretilir. Gün değiştiğinde aynı tohumla
- * yeniden üretilirler; böylece grafikler her zaman bugüne kadar dolu görünür
- * ve gelecek tarihli kayıt oluşmaz. (Demo içeriklerindeki ton düzeltmeleri
- * bu yenilemede sıfırlanır; konu tanımları korunur.)
+ * Çalışan kurulumda üretilmiş (kurgusal) içerik yoktur: panelde ve tanıtım
+ * sayfasında görünen her şey bağlı kaynaklardan toplanmış gerçek içeriktir.
+ * Eski sürümlerden kalan örnek alan ilk açılışta içerikleriyle silinir.
+ *
+ * Üretilmiş sınama verisi yalnızca otomatik testlerde (`config.seedFixture`)
+ * yüklenir; çözümleme, eşleştirme ve analiz hattını ağ olmadan sınamak içindir.
  */
 
 const DEMO_WORKSPACES: readonly DemoWorkspaceSpec[] = [PUBLIC_WORKSPACE];
@@ -78,9 +78,9 @@ function refreshDemoWorkspaces(now: number): void {
   }
 }
 
-/** Artık tanımlı olmayan demo alanlarını (ör. kaldırılan kargo demosu) içerikleriyle siler. */
+/** Sınama verisi kapalıyken hiçbir örnek alan kalmaz; açıkken yalnızca tanımlı olanlar kalır. */
 function removeRetiredDemoWorkspaces(): void {
-  const current = DEMO_WORKSPACES.map((spec) => spec.name);
+  const current = config.seedFixture ? DEMO_WORKSPACES.map((spec) => spec.name) : [];
   for (const workspace of listWorkspaces()) {
     if (workspace.kind === "demo" && !current.includes(workspace.name)) {
       execute("DELETE FROM workspaces WHERE id = ?", [workspace.id]);
@@ -100,13 +100,13 @@ export function ensureSeeded(now: number = Date.now()): void {
   if (checkedOnDay === day) return;
 
   if (isDatabaseEmpty()) {
-    const inserted = DEMO_WORKSPACES.reduce((sum, spec, index) => sum + createDemoWorkspace(spec, now + index), 0);
+    const inserted = config.seedFixture ? DEMO_WORKSPACES.reduce((sum, spec, index) => sum + createDemoWorkspace(spec, now + index), 0) : 0;
     createWorkspace(LIVE_WORKSPACE_NAME, "live", now);
-    recordAudit({ workspaceId: null, action: "kurulum", objectType: "sistem", detail: `İlk kurulum: ${inserted} kurgusal demo kaydı oluşturuldu.` }, now);
+    recordAudit({ workspaceId: null, action: "kurulum", objectType: "sistem", detail: config.seedFixture ? `İlk kurulum: ${inserted} sınama kaydı oluşturuldu.` : "İlk kurulum." }, now);
     writeSeededDay(day);
   } else {
     removeRetiredDemoWorkspaces();
-    if (readSeededDay() !== day) {
+    if (config.seedFixture && readSeededDay() !== day) {
       refreshDemoWorkspaces(now);
       writeSeededDay(day);
     }

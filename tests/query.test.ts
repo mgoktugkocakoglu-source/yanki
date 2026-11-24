@@ -1,3 +1,4 @@
+import { composeQuery, decomposeQuery, describeQuery, plainFromSearch, queryToTopicTerms, topicTermsToQuery } from "@/lib/query";
 import { describe, expect, it } from "vitest";
 import {
   buildCollectionPlan,
@@ -180,5 +181,44 @@ describe("SQL derleyici", () => {
     const { sql, params } = compileToSql(parseQuery("(kargo OR teslimat) ton:olumsuz NOT çekiliş"));
     expect(sql).toMatch(/^\(\(.+ OR .+\) AND .+ AND NOT COALESCE\(.+, 0\)\)$/s);
     expect(params).toEqual(["%kargo%", "kargo", "inflect", "%teslima%", "teslimat", "inflect", "negative", "%cekilis%", "cekilis", "inflect"]);
+  });
+});
+
+describe("düz anlatım: sorgu dili kullanıcıya gösterilmez", () => {
+  const screenshotQuery = '(e-Devlet OR edevlet OR "e-devlet kapısı") NOT çekiliş dil:tr';
+
+  it("kayıtlı sorguyu kelime listelerine çevirir", () => {
+    expect(decomposeQuery(screenshotQuery)).toEqual({ anyOf: ["e-Devlet", "edevlet", "e-devlet kapısı"], allOf: [], noneOf: ["çekiliş"], language: "tr" });
+  });
+
+  it("kelime listelerinden kurulan sorgu aynı listelere geri döner", () => {
+    const plain = { anyOf: ["e-Devlet", "edevlet"], allOf: ["kimlik doğrulama"], noneOf: ["çekiliş", "iş ilanı"], language: "tr" };
+    expect(decomposeQuery(composeQuery(plain))).toEqual(plain);
+  });
+
+  it("işleç gibi görünen kelimeler düz kelime olarak aranır", () => {
+    const query = composeQuery(plainFromSearch("ve veya değil", "", null));
+    expect(describeQuery(query)?.required).toEqual([["ve"], ["veya"], ["değil"]]);
+  });
+
+  it("arama kutusunda virgül farklı yazımları, boşluk birlikte aranan kelimeleri ayırır", () => {
+    expect(plainFromSearch("e-Devlet, edevlet", "çekiliş", "tr")).toEqual({ anyOf: ["e-Devlet", "edevlet"], allOf: [], noneOf: ["çekiliş"], language: "tr" });
+    expect(plainFromSearch("Brezilya seçimleri", "", null).allOf).toEqual(["Brezilya", "seçimleri"]);
+    expect(plainFromSearch('"Brezilya seçimleri"', "", null).allOf).toEqual(["Brezilya seçimleri"]);
+  });
+
+  it("anlatımda işleç ve alan adı geçmez", () => {
+    const description = describeQuery(screenshotQuery);
+    expect(description).toEqual({ required: [["e-Devlet", "edevlet", "e-devlet kapısı"]], excluded: ["çekiliş"], filters: ["Dil: Türkçe"], simple: true });
+  });
+
+  it("kelime listesine inmeyen tanım form alanlarına çevrilmez ama anlatılabilir", () => {
+    expect(decomposeQuery("seçim YAKIN/5 sonuç")).toBeNull();
+    expect(describeQuery("seçim YAKIN/5 sonuç")?.required.flat().length).toBeGreaterThan(0);
+  });
+
+  it("konu kelimeleri sorguya çevrilir ve geri okunur", () => {
+    expect(queryToTopicTerms(topicTermsToQuery("gecik*, gelmedi, su kesintisi"))).toBe("gecik*, gelmedi, su kesintisi");
+    expect(queryToTopicTerms("fiyat OR zam OR pahalı")).toBe("fiyat, zam, pahalı");
   });
 });

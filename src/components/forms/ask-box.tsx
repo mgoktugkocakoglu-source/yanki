@@ -4,7 +4,7 @@ import { MessageCircleQuestion } from "lucide-react";
 import Link from "next/link";
 import { useActionState } from "react";
 import type { RangeKey } from "@/lib/time";
-import { askQuestionAction, type AskState } from "@/server/actions";
+import { askQuestionAction, type AskState } from "@/server/actions/ai";
 import { BUTTON_SECONDARY, INPUT } from "../ui";
 
 const INITIAL: AskState = { status: "idle" };

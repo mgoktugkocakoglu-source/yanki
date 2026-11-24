@@ -15,7 +15,7 @@ import {
 } from "@/server/auth/access";
 import { hashPassword, verifyPassword } from "@/server/auth/passwords";
 import { queryOne } from "@/server/db/client";
-import { ensureSeeded } from "@/server/demo/seed";
+import { ensureSeeded } from "@/server/setup/seed";
 import {
   acceptInvitation,
   createInvitation,

@@ -3,7 +3,8 @@
 import { ShieldAlert } from "lucide-react";
 import { useActionState } from "react";
 import type { RangeKey } from "@/lib/time";
-import { scanClaimsAction, type FormState } from "@/server/actions";
+import { scanClaimsAction } from "@/server/actions/claims";
+import { type FormState } from "@/server/actions/shared";
 import { BUTTON_PRIMARY } from "../ui";
 
 const INITIAL: FormState = { ok: false, message: "", errors: {} };

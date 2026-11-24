@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { loginAction, setupSysadminAction, type AuthState } from "@/server/auth-actions";
+import { loginAction, setupSysadminAction, type AuthState } from "@/server/actions/auth";
 import { BUTTON_PRIMARY, INPUT } from "../ui";
 
 const INITIAL: AuthState = { ok: false, message: "" };

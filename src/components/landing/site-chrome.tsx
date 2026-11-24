@@ -125,7 +125,7 @@ export function SiteFooter() {
           ]}
         />
       </div>
-      <p className={`${SECTION} border-t border-line py-5 text-[0.8125rem] text-ink-muted`}>Demo çalışma alanlarındaki tüm kurum, kişi ve içerikler kurgusaldır.</p>
+      <p className={`${SECTION} border-t border-line py-5 text-[0.8125rem] text-ink-muted`}>Panelde gösterilen içerikler bağlı kaynaklardan toplanmış gerçek haber ve paylaşımlardır.</p>
     </footer>
   );
 }

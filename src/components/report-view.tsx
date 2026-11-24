@@ -1,3 +1,4 @@
+import { QuerySummary } from "@/components/query-summary";
 import type { ReactNode } from "react";
 import { share } from "@/domain/metrics";
 import type { Project } from "@/domain/types";
@@ -59,7 +60,7 @@ export function ReportView({ project, rangeKey, now }: { project: Project; range
             {RANGE_PRESETS[rangeKey].label} · <span className="reading">{formatDateTime(overview.range.from)}</span> –{" "}
             <span className="reading">{formatDateTime(overview.range.to)}</span>
           </p>
-          <p className="reading mt-2 rounded bg-sunken px-2.5 py-1.5 text-[0.8125rem] text-ink-soft">{project.query}</p>
+          <QuerySummary query={project.query} className="mt-2" />
         </div>
         <Logo />
       </header>

@@ -1,3 +1,4 @@
+import { QuerySummary } from "@/components/query-summary";
 import { ArrowRight, BellRing, Database, FileDown, Filter, Radio, ScanSearch, ShieldCheck, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 /*
- * Tanıtım sayfası. Buradaki her önizleme panelin kendi bileşenleriyle ve demo
+ * Tanıtım sayfası. Buradaki her önizleme panelin kendi bileşenleriyle ve gerçek
  * çalışma alanının verisiyle çizilir; ekran görüntüsü ya da elle yazılmış
  * sayı yoktur. Müşteri logosu, kullanıcı sayısı, başarı oranı gibi
  * doğrulanamayan kanıtlar bilerek yer almaz.
@@ -81,13 +82,13 @@ async function Showcase() {
       key: "dinleme",
       label: "Dinleme",
       title: "Aradığınızı tam olarak tarif edin",
-      description: "Arama dili VE, VEYA, DEĞİL ve YAKIN işleçlerini, tırnaklı ifadeleri ve alan süzgeçlerini destekler; Türkçe çekim eklerini kendisi tanır.",
-      points: ["“seçim” yazdığınızda “seçimler”, “seçimde”, “seçimin” de eşleşir", "Kaynak, ton, niyet ve konu süzgeçleri aynı satırda", "Eşleşen kelime her içerikte işaretlenir"],
+      description: "Aranacak kelimeleri, farklı yazımlarını ve hariç tutulacakları girmeniz yeterlidir; Türkçe çekim eklerini Yankı kendisi tanır.",
+      points: ["“seçim” yazdığınızda “seçimler”, “seçimde”, “seçimin” de eşleşir", "Kaynak, ton, niyet ve konu süzgeçleri tek tıkla", "Eşleşen kelime her içerikte işaretlenir"],
       panel: (
         <PreviewFrame title={project.name}>
           <div className="flex flex-col gap-3">
-            <PreviewCard title="Proje sorgusu">
-              <p className="reading break-words text-[0.8125rem] leading-relaxed text-ink-soft">{project.query}</p>
+            <PreviewCard title="Arama tanımı">
+              <QuerySummary query={project.query} />
             </PreviewCard>
             {overview.highlights.slice(2, 3).map((mention) => (
               <MentionCard key={mention.id} mention={mention} queries={queries} topicNames={topicNames} now={now} editable={false} />
@@ -107,7 +108,7 @@ async function Showcase() {
           {lead ? (
             <AnomalyCard anomaly={lead} mentionsHref={listHref} />
           ) : (
-            <p className="rounded-xl border border-line bg-surface p-4 text-ink-soft">Demo projesinde bu dönem olağan dışı bir hareket yok.</p>
+            <p className="rounded-xl border border-line bg-surface p-4 text-ink-soft">Bu konuda seçili dönemde olağan dışı bir hareket yok.</p>
           )}
         </PreviewFrame>
       ),
@@ -170,7 +171,7 @@ function InflectionDemo() {
   return (
     <div>
       <p className="text-[0.75rem] text-ink-muted">
-        Sorgu: <span className="reading text-ink">seçim</span>
+        Aranan: <span className="reading text-ink">seçim</span>
       </p>
       <p className="mt-2 leading-relaxed">
         <Highlighted text={INFLECTION_SAMPLE} queries={parsed.ok ? [parsed.ast] : []} />
@@ -205,7 +206,7 @@ async function SourceCoverage() {
 
 const FLOW_STEPS = [
   { icon: Radio, title: "Topla", text: "Bağlı kaynaklar belirlediğiniz aralıkla taranır." },
-  { icon: Filter, title: "Eşleştir", text: "İçerik proje sorgusundan geçer; yinelenenler birleştirilir." },
+  { icon: Filter, title: "Eşleştir", text: "İçerik arama tanımıyla eşleştirilir; yinelenenler birleştirilir." },
   { icon: ScanSearch, title: "Çözümle", text: "Ton, duygu, niyet ve konu etiketlenir." },
   { icon: BellRing, title: "Uyar", text: "Olağan dışı hareket, nedeniyle birlikte işaretlenir." },
 ];
@@ -213,14 +214,14 @@ const FLOW_STEPS = [
 const STEPS = [
   { step: "1", title: "İzle", text: "Bir konu, kurum ya da marka için anahtar kelimelerinizi yazın. Yankı bağlı kaynakları düzenli tarar ve eşleşenleri tek listede toplar." },
   { step: "2", title: "Anla", text: "Hacim, ton, konular ve en çok yayılan hikâyeler aynı ekranda. Bir sıçrama olduğunda hangi konu ve kaynağın öne çıktığını görürsünüz." },
-  { step: "3", title: "Harekete geç", text: "Uyarıyı açın, ilgili içeriklere inin, yanlış etiketi düzeltin, listeyi dışa aktarın. Proje ve sorgu değişiklikleri ile dışa aktarmalar denetim izine yazılır." },
+  { step: "3", title: "Harekete geç", text: "Uyarıyı açın, ilgili içeriklere inin, yanlış etiketi düzeltin, listeyi dışa aktarın. Proje ve arama tanımı değişiklikleri ile dışa aktarmalar denetim izine yazılır." },
 ];
 
 const FAQ = [
   {
     question: "Demodaki veriler gerçek mi?",
     answer:
-      "Hayır. Demo çalışma alanlarındaki kurumlar, kişiler ve içerikler kurgusaldır ve her ekranda “Demo” etiketiyle işaretlidir. Gerçek veri, canlı çalışma alanında bağlı kaynaklardan toplanır.",
+      "Evet. Panelde ve bu sayfadaki örneklerde görünen içeriklerin tamamı bağlı kaynaklardan toplanmış gerçek haber ve paylaşımlardır; üretilmiş ya da örnek amaçlı yazılmış içerik yoktur. Her içerik kaynağındaki özgün sayfaya bağlantı verir.",
   },
   {
     question: "X, YouTube ve TikTok'tan veri çekiyor mu?",
@@ -266,7 +267,7 @@ export default function LandingPage() {
                   Nasıl çalışır?
                 </a>
               </div>
-              <p className="mt-4 text-[0.8125rem] text-ink-muted">Kayıt gerekmez. Arama gerçek kaynakları tarar; örnek belediye alanı kurgusaldır.</p>
+              <p className="mt-4 text-[0.8125rem] text-ink-muted">Kayıt gerekmez. Gördüğünüz her içerik bağlı kaynaklardan toplanmış gerçek içeriktir.</p>
             </div>
 
             <div className="mt-12">
@@ -301,7 +302,7 @@ export default function LandingPage() {
           <div className={SECTION}>
             <p className={EYEBROW}>Ürün</p>
             <h2 className={SECTION_TITLE}>Panelin kendisinden dört kesit.</h2>
-            <p className="mt-3 max-w-[60ch] text-[1rem] text-ink-soft">Aşağıdaki örnekler ekran görüntüsü değildir; demo projesinin şu anki verisiyle, panelde kullanılan bileşenlerle çizilir.</p>
+            <p className="mt-3 max-w-[60ch] text-[1rem] text-ink-soft">Aşağıdaki örnekler ekran görüntüsü değildir; izlenen gerçek bir gündem konusunun şu anki verisiyle, panelde kullanılan bileşenlerle çizilir.</p>
             <div className="mt-8">
               <Suspense fallback={<PreviewSkeleton />}>
                 <Showcase />
@@ -356,9 +357,9 @@ export default function LandingPage() {
                 className="lg:col-span-2"
                 icon={<FileDown className="h-5 w-5" />}
                 title="Denetlenebilir kayıt"
-                demo={<p className="reading text-[0.8125rem] leading-relaxed text-ink-soft">proje oluşturuldu · sorgu güncellendi · proje silindi · dışa aktarıldı</p>}
+                demo={<p className="reading text-[0.8125rem] leading-relaxed text-ink-soft">proje oluşturuldu · arama tanımı güncellendi · proje silindi · dışa aktarıldı</p>}
               >
-                Proje oluşturma, sorgu değişikliği, silme ve dışa aktarma denetim izine yazılır.
+                Proje oluşturma, arama tanımı değişikliği, silme ve dışa aktarma denetim izine yazılır.
               </BentoCard>
             </div>
           </div>
@@ -431,7 +432,7 @@ export default function LandingPage() {
           <div className={SECTION}>
             <div className="rounded-3xl border border-line bg-brand-wash px-6 py-12 text-center sm:px-12">
               <h2 className="mx-auto max-w-[24ch] text-[1.75rem] font-semibold leading-tight tracking-[-0.025em] sm:text-[2.125rem]">Paneli kendi gözünüzle görün.</h2>
-              <p className="mx-auto mt-3 max-w-[52ch] text-[1rem] text-ink-soft">Bir konu yazın, bağlı kaynaklardan gerçek içerikler gelsin. Panelin tüm ekranlarını dolu görmek için kurgusal bir belediye örneği de hazır.</p>
+              <p className="mx-auto mt-3 max-w-[52ch] text-[1rem] text-ink-soft">Bir konu yazın, bağlı kaynaklardan gerçek içerikler gelsin. İzlenen gündem konuları panelde hazır bekliyor.</p>
               <div className="mt-7 flex flex-wrap justify-center gap-3">
                 <Link href="/panel" className={CTA_PRIMARY}>
                   Demoyu incele

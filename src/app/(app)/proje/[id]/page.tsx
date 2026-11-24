@@ -125,7 +125,7 @@ export default async function OverviewPage({ params, searchParams }: PageProps<"
             {overview.lastCollectedAt ? (
               <span title={formatDateTime(overview.lastCollectedAt)}>
                 {" · "}
-                {workspace.kind === "demo" ? "demo verisi (kurgusal)" : `son içerik ${formatRelative(overview.lastCollectedAt, now)} toplandı`}
+                {`son içerik ${formatRelative(overview.lastCollectedAt, now)} toplandı`}
               </span>
             ) : null}
           </>

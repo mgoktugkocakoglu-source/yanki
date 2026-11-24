@@ -4,7 +4,7 @@ import { parseQuery } from "@/lib/query";
 import { resolveRange } from "@/lib/time";
 import { buildClassifyPrompt } from "@/server/ai/prompt";
 import { AiError, type AiProvider, type ClassifyDraft, type ClassifyRequest } from "@/server/ai/types";
-import { ensureSeeded } from "@/server/demo/seed";
+import { ensureSeeded } from "@/server/setup/seed";
 import { retagProject } from "@/server/pipeline/retag";
 import { summarize } from "@/server/repositories/metrics";
 import { countAiClassified, countMentions, getMention, listUnclassified, setSentimentOverride } from "@/server/repositories/mentions";

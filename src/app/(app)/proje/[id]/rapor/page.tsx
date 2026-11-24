@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { PageContainer, PageHeading, Panel, BUTTON_PRIMARY, BUTTON_SECONDARY } from "@/components/ui";
 import { formatRelative } from "@/lib/format";
 import { RANGE_PRESETS } from "@/lib/time";
-import { createReportShareAction, revokeReportShareAction } from "@/server/actions";
+import { createReportShareAction, revokeReportShareAction } from "@/server/actions/reports";
 import { loadProjectContext, readRange } from "@/server/context";
 import { listActiveShares } from "@/server/repositories/shares";
 

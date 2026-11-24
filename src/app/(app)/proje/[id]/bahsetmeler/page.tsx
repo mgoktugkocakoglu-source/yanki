@@ -10,7 +10,7 @@ import { SENTIMENT_LABELS, SENTIMENT_QUERY, SOURCE_TYPE_LABELS, SOURCE_TYPE_QUER
 import { SENTIMENTS, type SourceType } from "@/domain/types";
 import { formatDateTime, formatDayLong, formatNumber } from "@/lib/format";
 import { PARAMS, projectHref } from "@/lib/links";
-import { tryParseQuery, type QueryNode } from "@/lib/query";
+import { tryParseQuery, type QueryNode, describeQuery } from "@/lib/query";
 import { DAY_MS, RANGE_PRESETS } from "@/lib/time";
 import { loadProjectContext, readPositiveInteger, readString, type SearchParams } from "@/server/context";
 import { countMentions, getMention, listMentions, type MentionSort } from "@/server/repositories/mentions";
@@ -105,6 +105,14 @@ export default async function MentionsPage({ params, searchParams }: PageProps<"
 
   const projectQuery = tryParseQuery(project.query);
   const highlightQueries: QueryNode[] = [...(projectQuery.ok ? [projectQuery.ast] : []), ...(query.queryAst ? [query.queryAst] : [])];
+  const queryDescription = query.queryText ? describeQuery(query.queryText) : null;
+  const activeFilterLabels = queryDescription
+    ? [
+        ...queryDescription.required.map((group) => group.join(" ya da ")),
+        ...queryDescription.excluded.map((term) => `hariç: ${term}`),
+        ...queryDescription.filters,
+      ]
+    : [];
   const lowerQuery = query.queryText.toLocaleLowerCase("tr-TR");
   const facetHref = (field: string, value: string) =>
     hrefWith(base, rawParams, { [PARAMS.query]: toggleField(query.queryText, field, value) || null, [PARAMS.page]: null });
@@ -140,14 +148,18 @@ export default async function MentionsPage({ params, searchParams }: PageProps<"
       <QueryBar key={query.queryText} initialQuery={query.queryText} />
       {query.queryError ? (
         <p className="mt-2 rounded-md border border-negative/40 bg-negative-wash px-3 py-2 text-[0.875rem] text-negative-ink" role="alert">
-          Sorgu uygulanamadı: {query.queryError} Aşağıdaki liste süzgeçsiz gösteriliyor.
+          Arama uygulanamadı. Aşağıdaki liste süzgeçsiz gösteriliyor.
         </p>
       ) : null}
 
       {hasActiveFilter ? (
         <p className="mt-3 flex flex-wrap items-center gap-2 text-[0.8125rem] text-ink-soft">
           Etkin süzgeçler:
-          {query.queryText ? <span className="reading rounded-full bg-brand-wash px-2.5 py-0.5 text-brand-strong">{query.queryText}</span> : null}
+          {activeFilterLabels.map((label) => (
+            <span key={label} className="rounded-full bg-brand-wash px-2.5 py-0.5 text-brand-strong">
+              {label}
+            </span>
+          ))}
           {query.hasExplicitRange ? <span className="rounded-full bg-brand-wash px-2.5 py-0.5 text-brand-strong">{describeRange(query)}</span> : null}
           {query.includeIrrelevant ? <span className="rounded-full bg-brand-wash px-2.5 py-0.5 text-brand-strong">ilgisizler dahil</span> : null}
           <Link href={hrefWith(base, { [PARAMS.range]: rawParams[PARAMS.range] }, {})} className="font-semibold text-brand-strong hover:underline">
@@ -222,7 +234,7 @@ export default async function MentionsPage({ params, searchParams }: PageProps<"
               </Link>
             }
           >
-            Sorguyu gevşetmeyi ya da dönemi genişletmeyi deneyin. Bir kelimenin eklerini de yakalamak için tırnaksız yazın; “gecik*” gibi bir joker tüm türevleri getirir.
+            Daha az kelimeyle aramayı ya da dönemi genişletmeyi deneyin. Türkçe ekler kendiliğinden yakalanır.
           </EmptyState>
         ) : (
           mentions.map((mention) => (

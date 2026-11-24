@@ -6,7 +6,6 @@ import { RankedBars, ToneBar } from "@/components/charts/bars";
 import { Ridgeline } from "@/components/charts/ridgeline";
 import { VolumeChart } from "@/components/charts/volume-chart";
 import { MentionCard } from "@/components/mentions/mention-card";
-import { DemoBadge } from "@/components/shell/app-shell";
 import { ToneLegend } from "@/components/ui";
 import type { SolutionDemo, SolutionPreviewKind, SolutionTarget } from "@/domain/solutions";
 import { formatDateTime, formatNumber } from "@/lib/format";
@@ -16,22 +15,36 @@ import { DEFAULT_RANGE, RANGE_PRESETS, resolveRange } from "@/lib/time";
 import { requestStart } from "@/server/context";
 import { summarize } from "@/server/repositories/metrics";
 import { listProjects, listTopics } from "@/server/repositories/projects";
+import { listProjectOwners } from "@/server/repositories/users";
 import { listWorkspaces } from "@/server/repositories/workspaces";
 import { getOverview } from "@/server/services/overview";
 
 /**
  * Tanıtım sitesinin canlı önizlemeleri. Hepsi panelin kendi bileşenleriyle ve
- * demo çalışma alanlarının o anki verisiyle çizilir; elle yazılmış sayı yoktur.
+ * bağlı kaynaklardan toplanmış gerçek içerikle çizilir; elle yazılmış sayı ya
+ * da üretilmiş içerik yoktur.
  */
 
-/** Vitrin verisi: kurgusal demo alanının ilk projesi, son 30 gün. İstek başına bir kez okunur. */
+/**
+ * Vitrin verisi: canlı alandaki ortak (sahibi olmayan) gündem konularından son
+ * 30 günde en çok içerik toplananı. Bir kullanıcıya ait konu, herkese açık
+ * tanıtım sayfasında gösterilmez. İstek başına bir kez okunur.
+ */
 export const loadShowcase = cache(async () => {
   const now = await requestStart();
   const workspaces = listWorkspaces();
-  const workspace = workspaces.find((entry) => entry.kind === "demo");
-  const projects = workspace ? listProjects(workspace.id) : [];
-  const project = projects[0];
-  if (!workspace || !project) return null;
+  const workspace = workspaces.find((entry) => entry.kind === "live");
+  if (!workspace) return null;
+
+  const owners = listProjectOwners();
+  const range = resolveRange(DEFAULT_RANGE, now);
+  const projects = listProjects(workspace.id).filter((entry) => !owners.has(entry.id));
+  const ranked = projects
+    .map((entry) => ({ entry, total: summarize({ projectId: entry.id, range }).total }))
+    .filter((candidate) => candidate.total > 0)
+    .sort((a, b) => b.total - a.total);
+  const project = ranked[0]?.entry;
+  if (!project) return null;
 
   const overview = getOverview(project, DEFAULT_RANGE, now);
   const parsed = tryParseQuery(project.query);
@@ -47,12 +60,22 @@ export const loadShowcase = cache(async () => {
   };
 });
 
+/** Önizlemenin gerçek veriden çizildiğini söyleyen etiket. */
+function LiveBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-sunken px-2.5 py-0.5 text-[0.75rem] font-semibold text-ink-soft">
+      <span className="h-1.5 w-1.5 rounded-full bg-positive" aria-hidden="true" />
+      Gerçek veri
+    </span>
+  );
+}
+
 export function PreviewFrame({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-paper shadow-[var(--shadow-preview)]">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line bg-surface px-4 py-2.5">
         <p className="text-[0.875rem] font-semibold">{title}</p>
-        <DemoBadge />
+        <LiveBadge />
         <span className="ml-auto text-[0.8125rem] text-ink-muted">{RANGE_PRESETS[DEFAULT_RANGE].label}</span>
       </div>
       <div className="p-3 sm:p-4">{children}</div>
@@ -76,7 +99,7 @@ export function PreviewSkeleton({ tall = false }: { tall?: boolean }) {
   return <div className={`skeleton rounded-2xl ${tall ? "h-[34rem]" : "h-80"}`} aria-hidden="true" />;
 }
 
-/** Çözüm hedefinin, demo projesine göre çözülmüş adresi. */
+/** Çözüm hedefinin, vitrindeki konuya göre çözülmüş adresi. */
 export async function resolveTargetHref(demo: SolutionDemo, target: SolutionTarget): Promise<string> {
   if (target.kind === "workspace") return target.path;
   const showcase = await loadShowcase();
@@ -98,7 +121,7 @@ export async function SolutionPreview({ kind }: { demo: SolutionDemo; kind: Solu
     switch (kind) {
       case "alerts": {
         if (overview.explained.length === 0) {
-          return <p className="rounded-xl border border-line bg-surface p-4 text-ink-soft">Demo projesinde bu dönem olağan dışı bir hareket yok.</p>;
+          return <p className="rounded-xl border border-line bg-surface p-4 text-ink-soft">Bu konuda seçili dönemde olağan dışı bir hareket yok.</p>;
         }
         return (
           <div className="flex flex-col gap-3">

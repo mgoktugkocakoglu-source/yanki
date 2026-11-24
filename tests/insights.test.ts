@@ -4,7 +4,7 @@ import type { Project } from "@/domain/types";
 import { DAILY_OPTIONS, detectAnomalies, type SeriesBucket } from "@/lib/stats/anomaly";
 import { resolveRange } from "@/lib/time";
 import type { AiProvider, AnswerRequest } from "@/server/ai/types";
-import { ensureSeeded } from "@/server/demo/seed";
+import { ensureSeeded } from "@/server/setup/seed";
 import { summarize } from "@/server/repositories/metrics";
 import { listProjects } from "@/server/repositories/projects";
 import { ensureShare, getActiveShare, listActiveShares, revokeShare } from "@/server/repositories/shares";

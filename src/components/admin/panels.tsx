@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { PERMISSION_INFO, PERMISSIONS, ROLE_LABELS, type Permission } from "@/domain/permissions";
 import { formatDateTime, formatNumber, formatRelative, formatSigned } from "@/lib/format";
 import { canAssignCredits, canInvite, canManageAccount, isSysadmin } from "@/server/auth/access";
-import { setUserRoleAction } from "@/server/auth-actions";
+import { setUserRoleAction } from "@/server/actions/auth";
 import type { Invitation } from "@/server/repositories/invitations";
 import type { PoolEntry } from "@/server/repositories/organizations";
 import type { User } from "@/server/repositories/users";

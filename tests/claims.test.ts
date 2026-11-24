@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { Project } from "@/domain/types";
 import { buildMatchPrompt } from "@/server/ai/prompt";
 import type { AiProvider, ClaimsDraft, MatchDraft, MatchRequest } from "@/server/ai/types";
-import { ensureSeeded } from "@/server/demo/seed";
+import { ensureSeeded } from "@/server/setup/seed";
 import { FactCheckUnavailableError, type FactCheck } from "@/server/factcheck/google";
 import { getLatestClaimRun } from "@/server/repositories/claims";
 import { listProjects } from "@/server/repositories/projects";

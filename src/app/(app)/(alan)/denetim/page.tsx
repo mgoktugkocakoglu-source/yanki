@@ -15,6 +15,9 @@ const PAGE_SIZE = 200;
 /** Eylem kodlarının okunur karşılıkları. */
 const ACTION_LABELS: Record<string, string> = {
   kurulum: "İlk kurulum",
+  "haber-akışı.eklendi": "Haber akışı eklendi",
+  "haber-akışı.açıldı": "Haber akışı açıldı",
+  "haber-akışı.kapatıldı": "Haber akışı kapatıldı",
   "proje.oluşturuldu": "Proje oluşturuldu",
   "proje.güncellendi": "Proje güncellendi",
   "proje.silindi": "Proje silindi",
@@ -61,7 +64,7 @@ export default async function AuditPage() {
         lead="Kim, ne zaman, neyi değiştirdi ya da dışa aktardı. Kayıtlarda içerik metni tutulmaz; yalnızca eylem ve ilgili nesnenin kimliği yazılır."
       />
       {events.length === 0 ? (
-        <EmptyState title="Henüz kayıt yok">Proje oluşturma, sorgu değişikliği, ton düzeltmesi ve dışa aktarma gibi eylemler burada listelenir.</EmptyState>
+        <EmptyState title="Henüz kayıt yok">Proje oluşturma, arama tanımı değişikliği, ton düzeltmesi ve dışa aktarma gibi eylemler burada listelenir.</EmptyState>
       ) : (
         <Panel>
           <div className="overflow-x-auto">

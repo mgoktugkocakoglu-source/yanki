@@ -123,7 +123,7 @@ export default async function SourcesPage({ params, searchParams }: PageProps<"/
         lead={
           isLive
             ? `Bu projenin bağlı kaynakları${config.collectionIntervalMinutes > 0 ? ` ${config.collectionIntervalMinutes} dakikada bir` : ""} taranır. Her kaynağın ne getirebildiği ve hangi koşulla kullanılabildiği aşağıda yazılıdır.`
-            : "Bu bir demo projesidir: içerikler kurgusaldır ve hiçbir kaynak taranmaz. Canlı bir projede aşağıdaki bağlayıcılar kullanılır."
+            : "Bu projede kaynak taranmıyor. Canlı bir projede aşağıdaki bağlayıcılar kullanılır."
         }
         actions={isLive ? <CollectButton projectId={project.id} /> : null}
       />

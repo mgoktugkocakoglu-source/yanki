@@ -18,7 +18,7 @@ export default function SolutionsIndexPage() {
           <p className={EYEBROW}>Çözümler</p>
           <h1 className="mt-2 max-w-[20ch] text-[2.25rem] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[3rem]">Aynı panel, farklı sorular.</h1>
           <p className="mt-4 max-w-[60ch] text-[1.0625rem] leading-relaxed text-ink-soft">
-            Aşağıdaki her çözüm, panelde bugün çalışan bir ekrana karşılık gelir. Her sayfada o ekranın demo verisiyle çizilmiş canlı bir örneği yer alır.
+            Aşağıdaki her çözüm, panelde bugün çalışan bir ekrana karşılık gelir. Her sayfada o ekranın gerçek veriyle çizilmiş canlı bir örneği yer alır.
           </p>
         </div>
       </section>
@@ -52,7 +52,7 @@ export default function SolutionsIndexPage() {
         <div className={SECTION}>
           <div className="rounded-3xl border border-line bg-brand-wash px-6 py-10 text-center sm:px-12">
             <h2 className="mx-auto max-w-[26ch] text-[1.5rem] font-semibold leading-tight tracking-[-0.02em] sm:text-[1.875rem]">Hepsini tek demoda deneyin.</h2>
-            <p className="mx-auto mt-3 max-w-[52ch] text-ink-soft">Demo, kurgusal veriyle çalışan panelin kendisidir; kayıt gerekmez.</p>
+            <p className="mx-auto mt-3 max-w-[52ch] text-ink-soft">Demo, gerçek veriyle çalışan panelin kendisidir; kayıt gerekmez.</p>
             <Link href="/panel" className={`${CTA_PRIMARY} mt-6`}>
               Demoyu incele
               <ArrowRight className="h-4 w-4" aria-hidden="true" />

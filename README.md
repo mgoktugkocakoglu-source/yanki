@@ -20,9 +20,8 @@ Ardından <http://localhost:3000> adresini açın.
 | Çalışma alanı | İçerik |
 |---|---|
 | Çalışma alanım (canlı) | Arama ekranı (`/ara`) ve üç hazır gündem projesi: COP31, İsrail seçimleri, İran–İsrail gerilimi. İçerikler bağlı kaynaklardan gerçek olarak toplanır |
-| Demo · Kamu (belediye) | Kurgusal bir belediye ve su idaresi |
 
-Demo alanlarındaki kurumlar, kişiler ve metinler uydurmadır ve her ekranda "Demo · kurgusal veri" etiketiyle işaretlidir. Üzerlerinde çalışan sorgu motoru, ton çözümleyici ve analitik ise gerçektir.
+Panelde üretilmiş (kurgusal) içerik yoktur: görünen her şey bağlı kaynaklardan toplanmış gerçek içeriktir. `src/server/fixtures/` altındaki üretilmiş veri yalnızca otomatik testlerde yüklenir.
 
 Kendi projenizi açmak için **Projeler → Yeni proje**. Kaydetmeden önce "Önizle" ile sorgunun gerçek kaynaklardan ne getirdiğini görebilirsiniz.
 
@@ -36,6 +35,7 @@ Kendi projenizi açmak için **Projeler → Yeni proje**. Kaydetmeden önce "Ön
 | `npm run lint` | Kod denetimi |
 | `npm run typecheck` | Rota tiplerini üretir ve tip denetimi yapar |
 | `npm run kaynak-dene -- "ifade"` | Bağlayıcıları canlı kaynaklara karşı dener; hiçbir şey kaydetmez |
+| `npm run haber-tara` | Haber tarayıcısını canlı akışlara karşı geçici bir veritabanında dener ve akış akış rapor verir (`-- --kaydet` ile asıl arşive yazar) |
 
 ### Yapılandırma
 
@@ -45,6 +45,8 @@ Tümü isteğe bağlıdır; örnekleri `.env.example` dosyasındadır.
 |---|---|---|
 | `YANKI_DB_PATH` | `data/yanki.db` | Veritabanı dosyası |
 | `YANKI_COLLECT_INTERVAL_MINUTES` | `15` | Canlı projelerin otomatik taranma aralığı; `0` kapatır |
+| `YANKI_NEWS_INTERVAL_MINUTES` | `10` | Haber arşivinin akışları yeniden tarama aralığı; `0` kapatır |
+| `YANKI_NEWS_RETENTION_DAYS` | `90` | Haber arşivinde başlıkların saklanma süresi (gün) |
 | `YANKI_DEPLOYMENT` | `local` | `institution` yapılırsa yalnızca kişisel kullanıma izinli kaynaklar zorla kapanır |
 | `YANKI_USER_AGENT` | `YankiBot/0.1 …` | Kaynaklara giden isteklerdeki tanıtıcı ad |
 
@@ -52,7 +54,7 @@ Tümü isteğe bağlıdır; örnekleri `.env.example` dosyasındadır.
 
 **Ekranlar**
 
-- **Tanıtım sayfası** (`/`): Panelin kendi bileşenleri ve demo verisiyle çizilir; müşteri logosu, kullanıcı sayısı gibi doğrulanamayan kanıt içermez. "Demoyu incele" çalışan paneli (`/panel`) açar.
+- **Tanıtım sayfası** (`/`): Panelin kendi bileşenleri ve ortak gündem konularının gerçek verisiyle çizilir; müşteri logosu, kullanıcı sayısı gibi doğrulanamayan kanıt içermez. "Demoyu incele" çalışan paneli (`/panel`) açar.
 - **Çözümler** (`/cozumler`, `/cozumler/[slug]`): Kullanım alanına ve kurum türüne göre sayfalar. `src/domain/solutions.ts` kaydından üretilir; yalnızca panelde karşılığı olan çözümler yayımlanır.
 - **Genel Bakış**: Dört ölçüm kartı (toplam bahsedilme, tahmini erişim, olumlu içerik oranı, aktif uyarı), zaman içinde hacim, duygu dağılımı, dönemin özeti ve öne çıkan gelişmeler. Cümlelerdeki her ölçüm kanıtına bağlanır.
 - **Bahsedilmeler**: Sorgu çubuğu, ton ve kaynak süzgeçleri, etkin süzgeç etiketleri, eşleşen kelimelerin vurgulanması, sağda ayrıntı paneli (`secili` parametresi), ton düzeltme, "ilgisiz" işaretleme, CSV dışa aktarma.
@@ -63,7 +65,7 @@ Tümü isteğe bağlıdır; örnekleri `.env.example` dosyasındadır.
 - **Komuta merkezi**: Duvar ekranı için koyu, kendini yenileyen görünüm.
 - **Denetim izi**: Proje, konu, ton düzeltmesi ve dışa aktarma kayıtları.
 
-**Sorgu dili**
+**Sorgu dili (iç kullanım)**
 
 ```text
 ("Örnek Kurum" OR ornekkurum) VE (fatura VEYA kesinti) DEĞİL çekiliş dil:tr
@@ -71,13 +73,13 @@ seçim YAKIN/5 (sonuç OR sandık)
 gecik* ton:olumsuz -kaynak:haber takipçi:>5000
 ```
 
-Türkçe ekler kendiliğinden yakalanır: `seçim` yazmak `seçimler`, `seçimde`, `seçimin` için yeterlidir, ama `kar` yazmak `karar` ya da `karşı`yı getirmez. Türkçe karakterli ve karaktersiz yazımlar (`şikayet`, `sikayet`) aynı sayılır. İşleçlerin Türkçe ve İngilizce biçimleri eşdeğerdir. Tam liste arayüzdeki "Sorgu dili" düğmesinde.
+Türkçe ekler kendiliğinden yakalanır: `seçim` yazmak `seçimler`, `seçimde`, `seçimin` için yeterlidir, ama `kar` yazmak `karar` ya da `karşı`yı getirmez. Türkçe karakterli ve karaktersiz yazımlar (`şikayet`, `sikayet`) aynı sayılır. İşleçlerin Türkçe ve İngilizce biçimleri eşdeğerdir. Bu dil arayüzde gösterilmez: kullanıcı kelime listeleri girer, sorgu arka planda kurulur (`src/lib/query/plain.ts`).
 
 **Bağlı kaynaklar**
 
 | Kaynak | Tür | Koşul |
 |---|---|---|
-| Türkiye haber siteleri | 20 yayıncının kendi RSS akışı | Başlık, kısa alıntı ve bağlantı saklanır; tam metin saklanmaz |
+| Türkiye haber arşivi | 54 yayıncının 90 akışı sürekli taranır (`src/server/news/`); başlıklar 90 gün arşivde tutulur ve konular arşivden eşleştirilir | Başlık, kısa özet ve bağlantı saklanır; tam metin saklanmaz. robots.txt kurallarına uyulur |
 | Bluesky | Herkese açık gönderi araması | Açık uç nokta; davranışı belgelenmemiştir, değişebilir |
 | Google Haberler araması | Anahtar kelimeyle haber başlıkları | **Yalnızca kişisel kullanım.** Akışın kendi koşulu ticari kullanımı yasaklar |
 
@@ -101,9 +103,8 @@ Bunları bilerek kullanın; hiçbiri arayüzde gizlenmez.
 - **Soru sorma yanıtı saklamaz.** Dönemin hesaplanmış ölçümleri ve en yeni 100 içerik dil modeline gönderilir; model yalnızca bu ölçümlerdeki sayıları kullanacak şekilde yönlendirilir, ama çıktı yine de hata içerebilir.
 - **İddia taraması hüküm vermez.** "İddialar" ekranı dil modeliyle içeriklerden kontrol edilebilir iddiaları çıkarır (en yeni 150 içerik, en çok 12 iddia) ve Google Fact Check Tools API'de yayımlanmış doğrulamaları arar; bulunan kayıtların aynı iddiayla ilgili olup olmadığına yine dil modeli karar verir. Doğru/yanlış değerlendirmesi yalnızca adı ve bağlantısı gösterilen doğrulama kuruluşuna aittir. Arama için Google projesinde "Fact Check Tools API" etkin olmalıdır; değilse iddialar yine çıkarılır, eşleştirme yapılmaz. API'nin Türkçe kapsamı ölçülmedi.
 - **Ton çözümleyici sözlük ve kural tabanlıdır.** Hızlı, çevrimdışı ve denetlenebilirdir, ama bir dil modeli değildir ve doğruluğu etiketli bir veri kümesiyle ölçülmemiştir. İroni tespiti yalnızca "övgü + hizmet aksaklığı" kalıbını ve `(!)` işaretini yakalar. Aynı metinde iki kuruma farklı ton (ör. "A iyi ama B kötü") ayrıştırılmaz.
-- **Kapsam dardır.** Haber tarafı 20 yayıncının akışında o an duran öğelerle ve Google Haberler başlıklarıyla sınırlıdır. Sosyal tarafta yalnızca Bluesky vardır.
+- **Kapsam dardır.** Haber tarafı, yayıncıların kendi akışlarında yayımladığı başlık ve özetlerle sınırlıdır: makale sayfaları taranmaz, tam metin yoktur, akışı olmayan ya da akışı bizim tanıtıcımıza kapalı yayınlar (ör. İHA, DHA, T24) arşivde yer almaz. Arşiv, taramanın başladığı günden itibaren birikir; öncesine ait geçmiş yoktur. Sosyal tarafta yalnızca Bluesky vardır.
 - **Erişim tahmini çoğu canlı içerikte yoktur.** Kaynak takipçi ya da görüntülenme vermiyorsa sayı uydurulmaz.
-- **Kimlik doğrulama yoktur.** Uygulama tek kullanıcılı yerel kurulum içindir; denetim izinde kullanıcı `yerel-kullanici` olarak görünür. Bu yüzden sunucu yalnızca bu makineden (`127.0.0.1`) erişilebilir biçimde başlar; ağa açmadan önce kimlik doğrulama eklenmelidir.
 - **Zamanlayıcı süreç içindedir.** Sunucu kapalıyken tarama yapılmaz; ilk taramada en çok 7 gün geriye gidilir.
 - **Sorgu değişikliği geçmişe uygulanmaz.** Daha önce toplanan içerikler silinmez ve yeniden süzülmez.
 
@@ -125,8 +126,11 @@ src/
     collectors/    Bağlayıcılar ve kapsam kaydı
     pipeline/      Ham içerik → bahsetme dönüşümü, toplama, zamanlayıcı
     services/      Ekranların veri hazırlığı (bülten, kök neden, karşılaştırma)
-    demo/          Kurgusal veri üreteci
-    actions.ts     Arayüzden gelen tüm değişiklikler
+    news/          Haber arşivi: kaynak listesi ve tarayıcı
+    auth/          Oturum, parola ve erişim kuralları
+    setup/         İlk kurulum ve hazır gündem konuları
+    fixtures/      Yalnızca testlerde yüklenen sınama verisi üreteci
+    actions/       Sunucu işlevleri, alan alan (projeler, konular, toplama, yapay zekâ, rapor, yetki, haber arşivi)
   components/      Arayüz parçaları ve grafikler
   app/             Sayfalar ve uç noktalar
 tests/             Birim ve uçtan uca testler

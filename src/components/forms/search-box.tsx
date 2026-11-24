@@ -2,21 +2,14 @@
 
 import { Search } from "lucide-react";
 import { useActionState } from "react";
-import { quickSearchAction, type FormState } from "@/server/actions";
+import { QUERY_LANGUAGES } from "@/lib/query";
+import { quickSearchAction } from "@/server/actions/projects";
+import { type FormState } from "@/server/actions/shared";
 import { BUTTON_PRIMARY, INPUT } from "../ui";
 
 const INITIAL: FormState = { ok: false, message: "", errors: {} };
 
-const LANGUAGES = [
-  { code: "", label: "Tüm diller" },
-  { code: "tr", label: "Türkçe" },
-  { code: "en", label: "İngilizce" },
-  { code: "ar", label: "Arapça" },
-  { code: "de", label: "Almanca" },
-  { code: "fr", label: "Fransızca" },
-  { code: "es", label: "İspanyolca" },
-  { code: "ru", label: "Rusça" },
-];
+const LANGUAGES = [{ code: "", label: "Tüm diller" }, ...QUERY_LANGUAGES];
 
 export interface SearchPlatform {
   id: string;
@@ -46,7 +39,7 @@ export function SearchBox({ platforms }: { platforms: SearchPlatform[] }) {
           minLength={2}
           maxLength={400}
           autoComplete="off"
-          placeholder='Örn. "Brezilya seçimleri" ya da COP31'
+          placeholder="Örn. Brezilya seçimleri ya da COP31"
           aria-describedby="arama-durumu"
           className={`${INPUT} h-12 text-[1rem]`}
         />
@@ -56,17 +49,25 @@ export function SearchBox({ platforms }: { platforms: SearchPlatform[] }) {
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <label htmlFor="arama-dili" className="text-[0.8125rem] font-medium text-ink-soft">
-          Dil
-        </label>
-        <select id="arama-dili" name="language" defaultValue="" className={`${INPUT} w-auto py-1.5`}>
-          {LANGUAGES.map((language) => (
-            <option key={language.code} value={language.code}>
-              {language.label}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <div className="flex items-center gap-2">
+          <label htmlFor="arama-dili" className="text-[0.8125rem] font-medium text-ink-soft">
+            Dil
+          </label>
+          <select id="arama-dili" name="language" defaultValue="" className={`${INPUT} w-auto py-1.5`}>
+            {LANGUAGES.map((language) => (
+              <option key={language.code} value={language.code}>
+                {language.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex min-w-[16rem] flex-1 items-center gap-2">
+          <label htmlFor="arama-haric" className="shrink-0 text-[0.8125rem] font-medium text-ink-soft">
+            Bunlar geçmesin
+          </label>
+          <input id="arama-haric" name="exclude" type="text" maxLength={200} autoComplete="off" placeholder="isteğe bağlı; virgülle ayırın" className={`${INPUT} py-1.5`} />
+        </div>
       </div>
 
       <fieldset>

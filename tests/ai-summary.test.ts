@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { Project } from "@/domain/types";
 import { buildSummaryPrompt, clipText, ITEM_TEXT_LIMIT } from "@/server/ai/prompt";
 import { AiError, type AiProvider, type SummaryRequest } from "@/server/ai/types";
-import { ensureSeeded } from "@/server/demo/seed";
+import { ensureSeeded } from "@/server/setup/seed";
 import { getLatestAiSummary } from "@/server/repositories/ai-summaries";
 import { listProjects } from "@/server/repositories/projects";
 import { listWorkspaces } from "@/server/repositories/workspaces";

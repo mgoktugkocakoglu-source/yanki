@@ -30,6 +30,8 @@ export interface ConnectorDescriptor {
   metered?: boolean;
   /** Bir günde okunabilecek en çok içerik (maliyet ya da kota tavanı); tavansızsa tanımsız. */
   dailyLimit?: number;
+  /** Yerel arşivden okuyan kaynak: ilk taramada bu kadar gün geriye bakılır. */
+  archiveDays?: number;
   /** Kota korumak için iki tarama arasında beklenecek en az süre (dakika). */
   minIntervalMinutes?: number;
   capabilities: {

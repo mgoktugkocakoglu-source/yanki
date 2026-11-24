@@ -2,7 +2,8 @@
 
 import { RefreshCw } from "lucide-react";
 import { useActionState } from "react";
-import { collectNowAction, type FormState } from "@/server/actions";
+import { collectNowAction } from "@/server/actions/collection";
+import { type FormState } from "@/server/actions/shared";
 import { BUTTON_PRIMARY } from "../ui";
 
 const INITIAL: FormState = { ok: false, message: "", errors: {} };

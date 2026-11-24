@@ -1,9 +1,11 @@
+import { queryToTopicTerms } from "@/lib/query";
+import { QuerySummary } from "@/components/query-summary";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProjectForm } from "@/components/forms/project-form";
 import { TopicsForm } from "@/components/forms/topics-form";
 import { BUTTON_SECONDARY, PageContainer, PageHeading, Panel } from "@/components/ui";
-import { deleteProjectAction } from "@/server/actions";
+import { deleteProjectAction } from "@/server/actions/projects";
 import { loadProjectContext } from "@/server/context";
 import { listTopics } from "@/server/repositories/projects";
 import { connectorOptions } from "@/server/services/connector-options";
@@ -18,7 +20,7 @@ export default async function SettingsPage({ params }: PageProps<"/proje/[id]/ay
   const { project, workspace } = context;
   const isDemo = workspace.kind === "demo";
   const topicsText = listTopics(project.id)
-    .map((topic) => `${topic.groupName} | ${topic.name} | ${topic.query}`)
+    .map((topic) => `${topic.groupName} | ${topic.name} | ${queryToTopicTerms(topic.query)}`)
     .join("\n");
 
   return (
@@ -27,15 +29,15 @@ export default async function SettingsPage({ params }: PageProps<"/proje/[id]/ay
         title="Ayarlar"
         lead={
           isDemo
-            ? "Demo projelerinin sorgusu sabittir; konuları ise değiştirip sonucun analizlere nasıl yansıdığını deneyebilirsiniz."
-            : "Sorgu değişikliği bundan sonra toplanan içeriklere uygulanır; daha önce toplananlar silinmez."
+            ? "Demo projelerinin arama tanımı sabittir; konuları ise değiştirip sonucun analizlere nasıl yansıdığını deneyebilirsiniz."
+            : "Arama tanımındaki değişiklik bundan sonra toplanan içeriklere uygulanır; daha önce toplananlar silinmez."
         }
       />
 
       <div className="flex max-w-[64rem] flex-col gap-5">
-        <Panel title={isDemo ? "Sorgu (salt okunur)" : "Proje ve sorgu"}>
+        <Panel title={isDemo ? "Arama tanımı (salt okunur)" : "Proje ve arama tanımı"}>
           {isDemo ? (
-            <p className="reading rounded-md bg-sunken px-3 py-2.5 text-[0.875rem] leading-relaxed">{project.query}</p>
+            <QuerySummary query={project.query} />
           ) : (
             <ProjectForm
               projectId={project.id}

@@ -1,4 +1,4 @@
-import { seedAgendaProjects } from "./demo/agenda";
+import { seedAgendaProjects } from "./setup/agenda";
 import { collectProject } from "./pipeline/collect";
 import { cookies } from "next/headers";
 import { connection } from "next/server";
@@ -6,7 +6,7 @@ import type { Project, Workspace } from "@/domain/types";
 import { DEFAULT_RANGE, isRangeKey, type RangeKey } from "@/lib/time";
 import { canSeeProject, visibleProjects, type Viewer } from "./auth/access";
 import { requireUser } from "./auth/session";
-import { ensureSeeded } from "./demo/seed";
+import { ensureSeeded } from "./setup/seed";
 import { getProject, listProjects } from "./repositories/projects";
 import { getWorkspace, listWorkspaces } from "./repositories/workspaces";
 

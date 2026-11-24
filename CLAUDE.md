@@ -10,15 +10,17 @@ Yankı, Türkçe öncelikli bir medya izleme ve sosyal dinleme platformudur. Gen
 - `npm test` — testler (bellek içi veritabanı kullanır; `data/` dosyasına dokunmaz)
 - `npm run lint` ve `npm run typecheck` — her değişiklikten sonra ikisi de temiz olmalı
 - `npm run kaynak-dene -- "ifade"` — bağlayıcıları canlı kaynaklara karşı dener
+- `npm run haber-tara` — haber tarayıcısını canlı akışlarda dener (geçici veritabanı; `-- --kaydet` asıl arşive yazar)
 
 ## Değişmez kurallar
 
 - **Dil.** Arayüz metinleri, kod yorumları ve test adları Türkçedir. Tanımlayıcılar (değişken, işlev, dosya adı) İngilizcedir; adres çubuğundaki yollar ve parametreler Türkçedir (`/proje/[id]/bahsetmeler?q=…&d=30g`).
-- **Sahte veri canlı gibi sunulmaz.** Erişimi olmayan kaynak "planlanan" olarak listelenir (`server/collectors/registry.ts`). Demo verisi yalnızca demo çalışma alanlarında durur ve `is_demo` ile işaretlidir.
+- **Üretilmiş veri gösterilmez.** Panelde ve tanıtım sayfasında görünen her içerik bağlı kaynaklardan toplanmış gerçek içeriktir; kurgusal/örnek veri yoktur. Erişimi olmayan kaynak "planlanan" olarak listelenir (`server/collectors/registry.ts`). `src/server/fixtures/` altındaki üretilmiş veri yalnızca otomatik testlerde yüklenir (`YANKI_SEED_FIXTURE=1`, bkz. `vitest.config.mts`); çalışan kurulumda açılmaz. Tanıtım vitrini yalnızca sahibi olmayan ortak gündem konularını kullanır.
 - **Sayı uydurulmaz.** Kaynak bir ölçümü vermiyorsa alan `null` kalır ve arayüz bunu söyler (erişim, etkileşim, önceki dönem karşılaştırması).
 - **Eşleşme kuralları tek yerdedir.** Metin eşleşmesiyle ilgili her değişiklik `lib/query/matcher.ts` ve `lib/text/turkish.ts` içinde yapılır; SQL derleyici bu işlevleri yeniden yazmaz, çağırır. `tests/pipeline.test.ts` içindeki "SQL derleyici ile bellek içi eşleştirici aynı sonucu verir" testi bunu korur.
 - **Tüm okumalar `buildWhere` süzgecinden geçer.** Yeni bir analitik sorgu yazarken kendi `WHERE` cümlenizi kurmayın.
 - **Kullanıcı girdisi SQL metnine girmez.** Yalnızca parametre; boyut ve kova ifadeleri sabit listelerden seçilir.
+- **Tarayıcı görgü kurallarına uyar.** Haber arşivi yalnızca yayıncının kendi yayımladığı akışları okur; her alan adının robots.txt dosyasına ve bekleme süresine uyulur (`src/server/news/crawler.ts`, `src/lib/crawl/robots.ts`). Makale sayfası taranmaz, tam metin saklanmaz. Başlangıç listesine yalnızca `npm run haber-tara` ile canlı doğrulanmış adres eklenir.
 - **Dış içerik düz metindir.** Kaynaklardan gelen metin hiçbir zaman HTML olarak basılmaz.
 - **Her metriğin tanımı vardır.** Yeni bir bileşik sayı eklerken formülünü `domain/metrics.ts` içine yazın ve arayüzde `MetricInfo` ile gösterin.
 

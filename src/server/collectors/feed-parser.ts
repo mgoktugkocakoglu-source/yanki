@@ -133,3 +133,33 @@ export function parseFeed(xml: string): FeedEntry[] {
     .map(toEntry)
     .filter((entry): entry is FeedEntry => entry !== null);
 }
+
+/**
+ * Haber site haritasını (sitemaps.org + Google News uzantısı) girişlere çevirir.
+ * Yalnızca `news:news` bilgisi taşıyan adresler alınır; özet içermez.
+ */
+export function parseNewsSitemap(xml: string): FeedEntry[] {
+  const document = parser.parse(xml.replace(/^﻿/, "")) as XmlObject;
+  const urlset = document.urlset;
+  if (!isObject(urlset)) return [];
+  const entries: FeedEntry[] = [];
+  for (const node of asArray(urlset.url)) {
+    if (!isObject(node)) continue;
+    const news = node["news:news"];
+    if (!isObject(news)) continue;
+    const url = textOf(node.loc).trim();
+    const title = htmlToText(textOf(news["news:title"]));
+    if (!url || !title) continue;
+    entries.push({
+      id: url,
+      title,
+      url,
+      text: "",
+      author: null,
+      publishedAt: parseDate(textOf(news["news:publication_date"])),
+      sourceName: null,
+      sourceUrl: null,
+    });
+  }
+  return entries;
+}

@@ -3,7 +3,7 @@ import { effectiveSentiment, type Project } from "@/domain/types";
 import { EMPTY_FIELDS, matchQuery, parseQuery } from "@/lib/query";
 import { resolveRange } from "@/lib/time";
 import { queryAll } from "@/server/db/client";
-import { ensureSeeded } from "@/server/demo/seed";
+import { ensureSeeded } from "@/server/setup/seed";
 import { breakdown, summarize, timeSeries, topicBreakdown } from "@/server/repositories/metrics";
 import { countMentions, listMentions, setIrrelevant, setSentimentOverride } from "@/server/repositories/mentions";
 import { listProjects, listTopics } from "@/server/repositories/projects";

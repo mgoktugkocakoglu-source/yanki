@@ -70,12 +70,15 @@ function dailyLimitOf(connector: Connector): number | null {
 function buildRequest(connector: Connector, plan: CollectionPlan, lastRun: CollectionRun | undefined, now: number): CollectRequest {
   const { metered } = connector.descriptor;
   const resumeFrom = metered && lastRun && lastRun.status !== "error" ? lastRun.startedAt - METERED_OVERLAP_MS : null;
+  // Arşivden okuyan kaynakta ilk tarama arşivin tamamına bakar; sonrakiler yalnızca son pencereye.
+  const archiveDays = connector.descriptor.archiveDays;
+  const lookback = archiveDays !== undefined && !lastRun ? archiveDays * DAY_MS : LOOKBACK_MS;
   const limit = dailyLimitOf(connector);
   return {
     keywords: plan.keywords,
     groups: plan.groups,
     language: plan.language,
-    since: resumeFrom ?? now - LOOKBACK_MS,
+    since: resumeFrom ?? now - lookback,
     maxItems: limit === null ? null : Math.max(0, limit - fetchedSince(connector.descriptor.id, bucketStart(now, "day"))),
   };
 }

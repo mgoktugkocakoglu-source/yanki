@@ -65,7 +65,6 @@ export function MentionDetail({ mention, queries, topicNames, closeHref }: Menti
         <ToneChip sentiment={tone} corrected={mention.sentimentOverride !== null} />
         {mention.isSarcastic ? <Tag>ironi şüphesi</Tag> : null}
         {mention.isIrrelevant ? <Tag>ilgisiz işaretli</Tag> : null}
-        {mention.isDemo ? <Tag>demo verisi</Tag> : null}
       </div>
 
       {mention.title ? (

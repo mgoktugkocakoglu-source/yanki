@@ -6,7 +6,7 @@ import { InviteForm, OrganizationSettingsForm, PoolForm } from "@/components/for
 import { BUTTON_SECONDARY, PageContainer, PageHeading, Panel } from "@/components/ui";
 import { formatNumber } from "@/lib/format";
 import { requireSysadmin } from "@/server/auth/session";
-import { setOrganizationSuspendedAction } from "@/server/auth-actions";
+import { setOrganizationSuspendedAction } from "@/server/actions/auth";
 import { requestStart } from "@/server/context";
 import { listOpenInvitations } from "@/server/repositories/invitations";
 import { creditsSpentSince, getOrganization, listPoolLedger, seatsInUse } from "@/server/repositories/organizations";

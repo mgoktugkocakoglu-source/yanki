@@ -1,3 +1,4 @@
+import { QuerySummary } from "@/components/query-summary";
 import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -23,8 +24,8 @@ export default async function ProjectsPage() {
         title="Projeler"
         lead={
           isLive
-            ? "Her proje izlediğiniz bir kurum, marka, rakip ya da konudur; kendi sorgusu ve kaynakları vardır."
-            : `${workspace.name}: kurgusal veriyle hazırlanmış örnek projeler. Kendi projenizi açmak için canlı çalışma alanını kullanın.`
+            ? "Her proje izlediğiniz bir kurum, marka, rakip ya da konudur; kendi arama tanımı ve kaynakları vardır."
+            : `${workspace.name}: bu alandaki projeler kaynak taramaz.`
         }
         actions={
           <Link href="/projeler/yeni" className={BUTTON_PRIMARY}>
@@ -44,7 +45,7 @@ export default async function ProjectsPage() {
             </Link>
           }
         >
-          İzlemek istediğiniz adı ve varsa yaygın yazımlarını girin. Kaydetmeden önce gerçek kaynaklardan örnek içerik görüp sorguyu ayarlayabilirsiniz; ilk sonuçlar birkaç saniyede gelir.
+          İzlemek istediğiniz adı ve varsa yaygın yazımlarını girin. Kaydetmeden önce gerçek kaynaklardan örnek içerik görüp kelimeleri ayarlayabilirsiniz; ilk sonuçlar birkaç saniyede gelir.
         </EmptyState>
       ) : (
         <ul className="grid gap-4 lg:grid-cols-2">
@@ -63,9 +64,9 @@ export default async function ProjectsPage() {
                     </span>
                   </div>
                   {project.description ? <p className="mt-1 text-ink-soft">{project.description}</p> : null}
-                  <p className="reading mt-3 line-clamp-2 rounded bg-sunken px-2.5 py-1.5 text-[0.8125rem] text-ink-soft">{project.query}</p>
+                  <QuerySummary query={project.query} className="mt-3" />
                   <p className="mt-3 text-[0.8125rem] text-ink-muted">
-                    {isLive ? (connectorNames.length > 0 ? connectorNames.join(" · ") : "Kaynak seçilmemiş") : "Kurgusal veri"}
+                    {isLive ? (connectorNames.length > 0 ? connectorNames.join(" · ") : "Kaynak seçilmemiş") : "Kaynak taranmıyor"}
                     {isLive && collectedAt ? ` · son içerik ${formatRelative(collectedAt, now)}` : ""}
                   </p>
                 </Link>

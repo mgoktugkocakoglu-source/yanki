@@ -29,6 +29,18 @@ export const config = {
   /** Canlı projelerin otomatik taranma aralığı (dakika). 0 = kapalı. */
   collectionIntervalMinutes: readInteger("YANKI_COLLECT_INTERVAL_MINUTES", 15, 0),
 
+  /** Haber arşivinin akışları yeniden tarama aralığı (dakika). 0 = kapalı. */
+  newsIntervalMinutes: readInteger("YANKI_NEWS_INTERVAL_MINUTES", 10, 0),
+
+  /** Haber arşivinde başlıkların saklanma süresi (gün). */
+  newsRetentionDays: readInteger("YANKI_NEWS_RETENTION_DAYS", 90, 1),
+
+  /**
+   * Yalnızca otomatik testlerde açılır: çözümleme hattını sınamak için üretilmiş
+   * sınama verisini yükler. Çalışan kurulumda üretilmiş içerik bulunmaz.
+   */
+  seedFixture: process.env.YANKI_SEED_FIXTURE === "1",
+
   /** Kaynaklara giden isteklerde kendimizi tanıttığımız ad. */
   userAgent: process.env.YANKI_USER_AGENT ?? "YankiBot/0.1 (+yerel kurulum; medya izleme)",
 

@@ -4,7 +4,7 @@ import { ChevronDown, EyeOff, Undo2 } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { SENTIMENT_LABELS } from "@/domain/labels";
 import { SENTIMENTS, type Sentiment } from "@/domain/types";
-import { setIrrelevantAction, setToneAction } from "@/server/actions";
+import { setIrrelevantAction, setToneAction } from "@/server/actions/mentions";
 
 /**
  * İnsan düzeltmeleri: tonu değiştir, ilgisiz işaretle. Model sonucu silinmez;

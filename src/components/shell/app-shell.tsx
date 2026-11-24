@@ -1,10 +1,10 @@
-import { BarChart3, Bell, Building2, FileText, FolderKanban, GitCompareArrows, LayoutDashboard, LogOut, MessageSquareText, MonitorPlay, Radio, ScrollText, Search, Settings, ShieldAlert, ShieldCheck } from "lucide-react";
+import { BarChart3, Bell, Building2, FileText, FolderKanban, GitCompareArrows, LayoutDashboard, LogOut, MessageSquareText, MonitorPlay, Newspaper, Radio, ScrollText, Search, Settings, ShieldAlert, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { ROLE_LABELS, type Permission, type UserRole } from "@/domain/permissions";
 import type { Project, Workspace } from "@/domain/types";
-import { selectWorkspaceAction } from "@/server/actions";
-import { logoutAction } from "@/server/auth-actions";
+import { selectWorkspaceAction } from "@/server/actions/workspace";
+import { logoutAction } from "@/server/actions/auth";
 import { Logo } from "../brand";
 import { ProjectSwitcher, RangePicker, SideNav, WorkspaceSwitcher, type NavItem } from "./nav-controls";
 import { SidebarFrame } from "./sidebar-frame";
@@ -49,25 +49,14 @@ const WORKSPACE_ITEMS: NavItem[] = [
 
 const AUDIT_ITEM: NavItem = { href: "/denetim", label: "Denetim izi", icon: <ScrollText className={ICON} /> };
 const SYSTEM_ITEM: NavItem = { href: "/sistem", label: "Sistem yönetimi", icon: <ShieldCheck className={ICON} /> };
+const NEWS_ITEM: NavItem = { href: "/sistem/haber-arsivi", label: "Haber arşivi", icon: <Newspaper className={ICON} /> };
 const ORG_ITEM: NavItem = { href: "/yonetim", label: "Kurum yönetimi", icon: <Building2 className={ICON} /> };
 
 /** Yönetim grubu role göre kurulur; kullanıcıda boştur. Erişimi asıl denetleyen sayfaların kendisidir. */
 function managementItems(viewer: AppShellProps["viewer"]): NavItem[] {
-  if (viewer === null || viewer.role === "sysadmin") return [SYSTEM_ITEM, AUDIT_ITEM];
+  if (viewer === null || viewer.role === "sysadmin") return [SYSTEM_ITEM, NEWS_ITEM, AUDIT_ITEM];
   if (viewer.role === "admin") return viewer.permissions.includes("audit.view") ? [ORG_ITEM, AUDIT_ITEM] : [ORG_ITEM];
   return [];
-}
-
-export function DemoBadge() {
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-full border border-saffron/50 bg-saffron-wash px-2.5 py-0.5 text-[0.75rem] font-semibold text-saffron-ink"
-      title="Bu çalışma alanındaki kurumlar, kişiler ve içerikler kurgusaldır."
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-saffron" aria-hidden="true" />
-      Demo · kurgusal veri
-    </span>
-  );
 }
 
 function GroupLabel({ children }: { children: ReactNode }) {
@@ -155,7 +144,6 @@ export function AppShell({ workspace, workspaces, projects, project, viewer, chi
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-30 flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface/90 px-4 py-2 backdrop-blur sm:px-8">
           <p className="min-w-0 truncate text-[0.9375rem] font-semibold">{project?.name ?? workspace.name}</p>
-          {workspace.kind === "demo" ? <DemoBadge /> : null}
           <div className="ml-auto">
             <Suspense fallback={null}>
               <RangePicker />

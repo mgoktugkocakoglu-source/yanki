@@ -1,18 +1,19 @@
 "use client";
 
-import { Eye, Wand2 } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useActionState, useId, useState, useTransition } from "react";
 import { RUN_STATUS_LABELS } from "@/domain/labels";
 import { formatDateTime, formatNumber } from "@/lib/format";
-import { buildCollectionPlan, tryParseQuery } from "@/lib/query";
-import { previewQueryAction, saveProjectAction, type FormState, type PreviewState } from "@/server/actions";
-import { QueryHelp } from "../mentions/query-bar";
+import { buildCollectionPlan, composeQuery, decomposeQuery, QUERY_LANGUAGES, splitTerms, tryParseQuery } from "@/lib/query";
+import { previewQueryAction, saveProjectAction, type PreviewState } from "@/server/actions/projects";
+import { type FormState } from "@/server/actions/shared";
+import { QuerySummary } from "../query-summary";
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, INPUT } from "../ui";
 
 /**
- * Proje formu. Sorgu yazılırken ayrıştırılır ve kaynaklarda hangi ifadelerin
- * aranacağı gösterilir; "Önizle" kaydetmeden önce gerçek kaynaklardan örnek
- * getirir. Amaç, ilgisiz içerikle dolu bir proje kurmayı baştan önlemektir.
+ * Proje formu. Arama tanımı kelime listeleriyle girilir; sorgu metni arka
+ * planda kurulur ve kullanıcıya gösterilmez. "Önizle" kaydetmeden önce gerçek
+ * kaynaklardan örnek getirir.
  */
 
 export interface ConnectorOption {
@@ -37,27 +38,6 @@ interface ProjectFormProps {
 }
 
 const INITIAL_STATE: FormState = { ok: false, message: "", errors: {} };
-
-function splitTerms(value: string): string[] {
-  return value.split(",").map((term) => term.trim().replace(/["“”]/g, "")).filter(Boolean);
-}
-
-function quote(term: string): string {
-  return /\s/.test(term) ? `"${term}"` : term;
-}
-
-/** Sihirbaz alanlarından Boolean sorgu kurar. */
-function composeQuery(anyOf: string, allOf: string, noneOf: string, onlyTurkish: boolean): string {
-  const any = splitTerms(anyOf).map(quote);
-  const all = splitTerms(allOf).map(quote);
-  const none = splitTerms(noneOf).map(quote);
-  const parts: string[] = [];
-  if (any.length > 0) parts.push(any.length > 1 ? `(${any.join(" OR ")})` : any[0]);
-  parts.push(...all);
-  if (none.length > 0) parts.push(`NOT ${none.length > 1 ? `(${none.join(" OR ")})` : none[0]}`);
-  if (onlyTurkish) parts.push("dil:tr");
-  return parts.join(" ");
-}
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   return message ? (
@@ -106,7 +86,7 @@ function PreviewPanel({ state }: { state: Exclude<PreviewState, null> }) {
             ))}
           </ul>
           <p className="mt-2 text-[0.8125rem] text-ink-muted">
-            İlgisiz örnekler görüyorsanız sorguya zorunlu bir kelime ekleyin ya da DEĞİL ile hariç tutun.
+            İlgisiz örnekler görüyorsanız “Bunların hepsi de geçsin” alanına zorunlu bir kelime ekleyin ya da ilgisiz kelimeyi “Bunlar geçmesin” alanına yazın.
           </p>
         </>
       ) : (
@@ -118,18 +98,36 @@ function PreviewPanel({ state }: { state: Exclude<PreviewState, null> }) {
 
 export function ProjectForm({ projectId, workspaceId, initial, connectors }: ProjectFormProps) {
   const [state, formAction, saving] = useActionState(saveProjectAction, INITIAL_STATE);
-  const [query, setQuery] = useState(initial.query);
+  const [initialPlain] = useState(() => (initial.query ? decomposeQuery(initial.query) : null));
+  const [fields, setFields] = useState({
+    anyOf: initialPlain?.anyOf.join(", ") ?? "",
+    allOf: initialPlain?.allOf.join(", ") ?? "",
+    noneOf: initialPlain?.noneOf.join(", ") ?? "",
+    language: initial.query ? (initialPlain?.language ?? "") : "tr",
+  });
+  const [touched, setTouched] = useState(false);
   const [selected, setSelected] = useState<string[]>(initial.connectorIds);
-  const [wizard, setWizard] = useState({ anyOf: "", allOf: "", noneOf: "", onlyTurkish: true });
   const [preview, setPreview] = useState<PreviewState>(null);
   const [previewing, startPreview] = useTransition();
-  const ids = { name: useId(), description: useId(), query: useId(), queryError: useId(), nameError: useId() };
+  const ids = { name: useId(), description: useId(), language: useId(), queryError: useId(), nameError: useId() };
 
-  const trimmed = query.trim();
+  // Kelime listelerine indirgenemeyen kayıtlı tanım, alanlara dokunulmadıkça olduğu gibi korunur.
+  const keepsExisting = initial.query !== "" && initialPlain === null && !touched;
+  const composed = composeQuery({
+    anyOf: splitTerms(fields.anyOf),
+    allOf: splitTerms(fields.allOf),
+    noneOf: splitTerms(fields.noneOf),
+    language: fields.language || null,
+  });
+  const trimmed = keepsExisting ? initial.query : composed;
   const parsed = trimmed ? tryParseQuery(trimmed) : null;
   const plan = parsed?.ok ? buildCollectionPlan(parsed.ast) : null;
-  const liveError = parsed && !parsed.ok ? parsed.message : parsed?.ok && !plan ? "Sorgu, kaynaklarda aranabilecek en az bir kelime içermeli." : null;
+  const liveError = touched && !plan ? "Aranacak en az bir kelime yazın." : null;
   const queryError = liveError ?? state.errors.query;
+  const setField = (key: keyof typeof fields, value: string) => {
+    setTouched(true);
+    setFields((current) => ({ ...current, [key]: value }));
+  };
 
   const toggleConnector = (id: string) =>
     setSelected((current) => (current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id]));
@@ -171,8 +169,17 @@ export function ProjectForm({ projectId, workspaceId, initial, connectors }: Pro
       <fieldset>
         <legend className="mb-1 text-[1rem] font-semibold">Neyi izleyeceksiniz?</legend>
         <p className="mb-4 max-w-[70ch] text-[0.875rem] text-ink-soft">
-          Kelimeleri virgülle ayırarak yazıp sorguya dönüştürün ya da sorguyu doğrudan yazın. Türkçe ekler kendiliğinden yakalanır: “seçim” yazmak “seçimler” ve “seçimde” için de yeterlidir.
+          Kelimeleri virgülle ayırarak yazın. Türkçe ekler kendiliğinden yakalanır: “seçim” yazmak “seçimler” ve “seçimde” için de yeterlidir.
         </p>
+        <input type="hidden" name="query" value={trimmed} />
+
+        {initial.query !== "" && initialPlain === null ? (
+          <div className="mb-4 rounded-lg border border-line bg-surface p-4">
+            <p className="mb-2 text-[0.8125rem] font-medium">Geçerli arama tanımı</p>
+            <QuerySummary query={initial.query} />
+            <p className="mt-2 text-[0.8125rem] text-ink-muted">Aşağıdaki alanları doldurursanız yeni tanım bunun yerini alır; boş bırakırsanız bu tanım korunur.</p>
+          </div>
+        ) : null}
 
         <div className="rounded-lg border border-line bg-sunken p-4">
           <div className="grid gap-3 sm:grid-cols-3">
@@ -186,66 +193,33 @@ export function ProjectForm({ projectId, workspaceId, initial, connectors }: Pro
               <label key={key} className="block text-[0.8125rem] font-medium">
                 {label}
                 <input
-                  value={wizard[key]}
-                  onChange={(event) => setWizard((current) => ({ ...current, [key]: event.target.value }))}
+                  value={fields[key]}
+                  onChange={(event) => setField(key, event.target.value)}
                   placeholder={placeholder}
+                  maxLength={300}
+                  autoComplete="off"
+                  aria-describedby={ids.queryError}
                   className={`${INPUT} mt-1 font-normal`}
                 />
               </label>
             ))}
           </div>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <label className="inline-flex items-center gap-2 text-[0.875rem]">
-              <input
-                type="checkbox"
-                checked={wizard.onlyTurkish}
-                onChange={(event) => setWizard((current) => ({ ...current, onlyTurkish: event.target.checked }))}
-                className="h-4 w-4 accent-[var(--brand)]"
-              />
-              Yalnızca Türkçe içerik
+          <div className="mt-3 flex items-center gap-2">
+            <label htmlFor={ids.language} className="text-[0.875rem] font-medium">
+              Dil
             </label>
-            <button
-              type="button"
-              disabled={splitTerms(wizard.anyOf).length + splitTerms(wizard.allOf).length === 0}
-              onClick={() => setQuery(composeQuery(wizard.anyOf, wizard.allOf, wizard.noneOf, wizard.onlyTurkish))}
-              className={BUTTON_SECONDARY}
-            >
-              <Wand2 className="h-4 w-4" aria-hidden="true" />
-              Sorguya dönüştür
-            </button>
+            <select id={ids.language} value={fields.language} onChange={(event) => setField("language", event.target.value)} className={`${INPUT} w-auto py-1.5`}>
+              <option value="">Tüm diller</option>
+              {QUERY_LANGUAGES.map((language) => (
+                <option key={language.code} value={language.code}>
+                  {language.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-
-        <div className="mt-4">
-          <div className="mb-1 flex items-center justify-between">
-            <label htmlFor={ids.query} className="text-[0.875rem] font-medium">
-              Sorgu
-            </label>
-            <QueryHelp />
-          </div>
-          <textarea
-            id={ids.query}
-            name="query"
-            required
-            rows={3}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            spellCheck={false}
-            aria-invalid={queryError !== undefined && queryError !== null}
-            aria-describedby={ids.queryError}
-            placeholder='("Kurum Adı" OR kurumadi) NOT çekiliş dil:tr'
-            className={`${INPUT} reading leading-relaxed ${queryError ? "border-negative" : ""}`}
-          />
-          <div id={ids.queryError} className="mt-1 min-h-5 text-[0.8125rem]" aria-live="polite">
-            {queryError ? (
-              <span className="text-negative-ink">{queryError}</span>
-            ) : plan ? (
-              <span className="text-ink-soft">
-                Kaynaklarda aranacak ifadeler: <span className="reading text-ink">{plan.keywords.join(" · ")}</span>
-                {plan.language ? ` · dil: ${plan.language}` : ""}
-              </span>
-            ) : null}
-          </div>
+        <div id={ids.queryError} className="mt-1 min-h-5 text-[0.8125rem] text-negative-ink" aria-live="polite">
+          {queryError}
         </div>
       </fieldset>
 
@@ -296,7 +270,7 @@ export function ProjectForm({ projectId, workspaceId, initial, connectors }: Pro
       {preview ? <PreviewPanel state={preview} /> : null}
 
       <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
-        <button type="submit" disabled={saving || Boolean(liveError)} className={BUTTON_PRIMARY}>
+        <button type="submit" disabled={saving || !plan} className={BUTTON_PRIMARY}>
           {saving ? "Kaydediliyor…" : projectId ? "Değişiklikleri kaydet" : "Projeyi oluştur"}
         </button>
         <button type="button" onClick={runPreview} disabled={previewing || !plan || selected.length === 0} className={BUTTON_SECONDARY}>

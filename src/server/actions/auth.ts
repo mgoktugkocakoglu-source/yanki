@@ -4,14 +4,14 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { cleanPermissions, PERMISSION_INFO, ROLE_LABELS } from "@/domain/permissions";
-import { can, canAssignCredits, canInvite, canManageAccount, emailAllowed, isSysadmin, parseDomains } from "./auth/access";
-import { hashPassword, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, verifyPassword } from "./auth/passwords";
-import { currentToken, endSession, homePath, LOGIN_PATH, requireUser, startSession } from "./auth/session";
-import { ensureSeeded } from "./demo/seed";
-import { acceptInvitation, createInvitation, createPasswordReset, getInvitation, getInvitationByToken, getResetTarget, markResetUsed, revokeInvitation } from "./repositories/invitations";
-import { adjustPool, createOrganization, getOrganization, seatsInUse, setOrganizationSuspended, transferCredits, updateOrganization } from "./repositories/organizations";
-import { recordAudit } from "./repositories/runs";
-import { countUsers, createUser, getCredentials, getPasswordHash, getUser, normalizeEmail, setPassword, setPermissions, setUserDisabled, setUserRole, touchLogin, type User } from "./repositories/users";
+import { can, canAssignCredits, canInvite, canManageAccount, emailAllowed, isSysadmin, parseDomains } from "../auth/access";
+import { hashPassword, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, verifyPassword } from "../auth/passwords";
+import { currentToken, endSession, homePath, LOGIN_PATH, requireUser, startSession } from "../auth/session";
+import { ensureSeeded } from "../setup/seed";
+import { acceptInvitation, createInvitation, createPasswordReset, getInvitation, getInvitationByToken, getResetTarget, markResetUsed, revokeInvitation } from "../repositories/invitations";
+import { adjustPool, createOrganization, getOrganization, seatsInUse, setOrganizationSuspended, transferCredits, updateOrganization } from "../repositories/organizations";
+import { recordAudit } from "../repositories/runs";
+import { countUsers, createUser, getCredentials, getPasswordHash, getUser, normalizeEmail, setPassword, setPermissions, setUserDisabled, setUserRole, touchLogin, type User } from "../repositories/users";
 
 /**
  * Giriş, kurulum, kurum yönetimi, yetki atama, davet ve parola işlevleri.

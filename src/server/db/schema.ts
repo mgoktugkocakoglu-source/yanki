@@ -380,4 +380,55 @@ export const MIGRATIONS: readonly string[] = [
   ALTER TABLE audit_events ADD COLUMN org_id TEXT;
   CREATE INDEX idx_audit_org ON audit_events (org_id, created_at DESC);
   `,
+
+  // 10: Haber arşivi. Projelerden bağımsız, sürekli toplanan haber başlıkları.
+  `
+  -- Taranan akışlar (RSS/Atom ya da haber site haritası) ve son durumları.
+  CREATE TABLE news_feeds (
+    id               TEXT PRIMARY KEY,
+    outlet           TEXT NOT NULL,
+    domain           TEXT NOT NULL,
+    url              TEXT NOT NULL UNIQUE,
+    kind             TEXT NOT NULL CHECK (kind IN ('rss', 'sitemap')),
+    language         TEXT NOT NULL DEFAULT 'tr',
+    origin           TEXT NOT NULL CHECK (origin IN ('seed', 'manual')),
+    enabled          INTEGER NOT NULL DEFAULT 1,
+    etag             TEXT,
+    last_modified    TEXT,
+    last_fetched_at  INTEGER,
+    last_ok_at       INTEGER,
+    last_status      TEXT CHECK (last_status IN ('ok', 'unchanged', 'error', 'robots')),
+    last_error       TEXT,
+    last_item_count  INTEGER NOT NULL DEFAULT 0,
+    failures         INTEGER NOT NULL DEFAULT 0,
+    next_due_at      INTEGER NOT NULL DEFAULT 0,
+    created_at       INTEGER NOT NULL
+  );
+  CREATE INDEX idx_news_feeds_due ON news_feeds (enabled, next_due_at);
+
+  -- Alan adı başına robots.txt; günde bir yenilenir.
+  CREATE TABLE news_robots (
+    host        TEXT PRIMARY KEY,
+    body        TEXT NOT NULL,
+    fetched_at  INTEGER NOT NULL
+  ) WITHOUT ROWID;
+
+  -- Arşiv: yalnızca başlık, kısa özet ve bağlantı. Tam metin saklanmaz.
+  CREATE TABLE news_articles (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    feed_id        TEXT NOT NULL,
+    outlet         TEXT NOT NULL,
+    domain         TEXT NOT NULL,
+    url            TEXT NOT NULL UNIQUE,
+    external_id    TEXT NOT NULL,
+    title          TEXT NOT NULL,
+    summary        TEXT NOT NULL,
+    search_text    TEXT NOT NULL,
+    language       TEXT NOT NULL,
+    published_at   INTEGER NOT NULL,
+    first_seen_at  INTEGER NOT NULL
+  );
+  CREATE INDEX idx_news_articles_published ON news_articles (published_at DESC);
+  CREATE INDEX idx_news_articles_domain ON news_articles (domain, published_at DESC);
+  `,
 ];

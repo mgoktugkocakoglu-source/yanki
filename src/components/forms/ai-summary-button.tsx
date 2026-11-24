@@ -3,7 +3,8 @@
 import { Sparkles } from "lucide-react";
 import { useActionState } from "react";
 import type { RangeKey } from "@/lib/time";
-import { generateAiSummaryAction, type FormState } from "@/server/actions";
+import { generateAiSummaryAction } from "@/server/actions/ai";
+import { type FormState } from "@/server/actions/shared";
 import { BUTTON_SECONDARY } from "../ui";
 
 const INITIAL: FormState = { ok: false, message: "", errors: {} };

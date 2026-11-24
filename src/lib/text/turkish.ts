@@ -163,6 +163,16 @@ export function isInflectionOf(token: string, stem: string): boolean {
   return false;
 }
 
+/**
+ * `stem` kökünün her çekimli biçiminde değişmeden kalan baş kısmı. Kök ya
+ * aynen ya da son ünsüzü yumuşamış olarak geçtiği için, yumuşayabilen son
+ * harf atılır. Büyük arşivlerde kaba ön süzgeç (LIKE) için kullanılır; asıl
+ * eşleşme kararını yine `isInflectionOf` verir.
+ */
+export function stablePrefix(stem: string): string {
+  return softenedStem(stem) === null ? stem : stem.slice(0, -1);
+}
+
 export type TermMode = "inflect" | "exact" | "prefix";
 
 /** Tek kelime eşleşmesi: çekim farkında, birebir ya da ön ek. */

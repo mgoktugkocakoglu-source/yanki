@@ -134,7 +134,6 @@ export function CommandCenter({ initial }: { initial: LiveSnapshot }) {
               {stale ? null : <span className="echo-pulse absolute -inset-1.5 rounded-full border border-positive" />}
             </span>
             {stale ? "Bağlantı koptu; son görüntü gösteriliyor" : `Canlı · ${POLL_INTERVAL_MS / 1000} saniyede bir yenilenir`}
-            {snapshot.isDemo ? <span className="rounded-full border border-saffron/50 px-2 py-0.5 font-semibold text-saffron">Demo · kurgusal veri</span> : null}
           </p>
         </div>
         <div className="ml-auto flex items-center gap-6">
