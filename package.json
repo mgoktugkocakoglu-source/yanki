@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "kaynak-dene": "tsx --env-file-if-exists=.env.local scripts/try-connectors.ts",
-    "haber-tara": "tsx --env-file-if-exists=.env.local scripts/crawl-news.ts"
+    "haber-tara": "tsx --env-file-if-exists=.env.local scripts/crawl-news.ts",
+    "sqlite-aktar": "tsx --env-file-if-exists=.env.local scripts/import-sqlite.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.13.0",

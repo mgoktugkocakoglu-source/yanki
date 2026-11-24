@@ -15,7 +15,7 @@ npm run dev
 
 Ardından <http://localhost:3000> adresini açın.
 
-İlk açılışta veritabanı (`data/yanki.db`) kendiliğinden kurulur ve iki çalışma alanı oluşur:
+İlk açılışta veritabanı kendiliğinden kurulur (ayrı bir sunucu gerekmez; gömülü PostgreSQL `data/pg` klasörüne yazar) ve iki çalışma alanı oluşur:
 
 | Çalışma alanı | İçerik |
 |---|---|
@@ -35,6 +35,8 @@ Kendi projenizi açmak için **Projeler → Yeni proje**. Kaydetmeden önce "Ön
 | `npm run lint` | Kod denetimi |
 | `npm run typecheck` | Rota tiplerini üretir ve tip denetimi yapar |
 | `npm run kaynak-dene -- "ifade"` | Bağlayıcıları canlı kaynaklara karşı dener; hiçbir şey kaydetmez |
+| `npm run sqlite-aktar` | Eski SQLite dosyasındaki (`data/yanki.db`) veriyi PostgreSQL'e bir kez taşır; hedef doluysa dokunmaz |
+| `npm run format` | Tüm kodu Prettier ile biçimlendirir (`format:check` yalnızca denetler) |
 | `npm run haber-tara` | Haber tarayıcısını canlı akışlara karşı geçici bir veritabanında dener ve akış akış rapor verir (`-- --kaydet` ile asıl arşive yazar) |
 
 ### Yapılandırma
@@ -43,7 +45,9 @@ Tümü isteğe bağlıdır; örnekleri `.env.example` dosyasındadır.
 
 | Değişken | Varsayılan | Anlamı |
 |---|---|---|
-| `YANKI_DB_PATH` | `data/yanki.db` | Veritabanı dosyası |
+| `DATABASE_URL` | boş | PostgreSQL bağlantı adresi (`postgres://kullanici:parola@sunucu:5432/veritabani`). Boşsa gömülü PostgreSQL kullanılır |
+| `YANKI_DB_POOL_SIZE` | `10` | Bağlantı havuzundaki en çok bağlantı (yalnızca `DATABASE_URL` ile) |
+| `YANKI_PG_DIR` | `data/pg` | Gömülü PostgreSQL'in veri klasörü |
 | `YANKI_COLLECT_INTERVAL_MINUTES` | `15` | Canlı projelerin otomatik taranma aralığı; `0` kapatır |
 | `YANKI_NEWS_INTERVAL_MINUTES` | `10` | Haber arşivinin akışları yeniden tarama aralığı; `0` kapatır |
 | `YANKI_NEWS_RETENTION_DAYS` | `90` | Haber arşivinde başlıkların saklanma süresi (gün) |
@@ -110,7 +114,7 @@ Bunları bilerek kullanın; hiçbiri arayüzde gizlenmez.
 
 ## Mimari
 
-Tek bir Next.js uygulaması (modüler monolit) ve gömülü SQLite. Bilerek küçük tutuldu: kanıtlanmış bir darboğaz olmadan Kafka, ayrı vektör veritabanı ya da mikroservis eklenmedi. Sınırlar ise ilk günden nettir; her katman bir üsttekinden habersizdir.
+Tek bir Next.js uygulaması (modüler monolit) ve PostgreSQL. Kurum kurulumunda `DATABASE_URL` ile gerçek bir PostgreSQL sunucusuna bağlanır; geliştirmede ve testlerde uygulamayla gelen gömülü PostgreSQL (PGlite) kullanılır, böylece iki ortamda da aynı SQL çalışır. Bilerek küçük tutuldu: kanıtlanmış bir darboğaz olmadan Kafka, ayrı vektör veritabanı ya da mikroservis eklenmedi. Sınırlar ise ilk günden nettir; her katman bir üsttekinden habersizdir.
 
 ```text
 src/
@@ -121,7 +125,7 @@ src/
     analysis/      Dil, ton, duygu, niyet (saf işlevler)
     stats/         Anomali tespiti
   server/
-    db/            SQLite bağlantısı ve şema göçleri
+    db/            PostgreSQL bağlantısı (sunucu ya da gömülü) ve şema göçleri
     repositories/  Veri erişimi; tüm okumalar aynı süzgeçten geçer
     collectors/    Bağlayıcılar ve kapsam kaydı
     pipeline/      Ham içerik → bahsetme dönüşümü, toplama, zamanlayıcı
@@ -138,7 +142,7 @@ tests/             Birim ve uçtan uca testler
 
 Üç tasarım kararı kodun geri kalanını belirler:
 
-1. **Tek sorgu ağacı, üç kullanım.** Kullanıcının yazdığı sorgu bir kez ayrıştırılır; aynı ağaç (a) toplanan içeriği süzer, (b) SQL'e derlenip geçmişi arar, (c) arayüzde eşleşen kelimeleri vurgular. Eşleşme kuralları tek yerde (`matcher.ts`) yaşar; SQL tarafı aynı işlevi veritabanına kayıtlı bir işlev olarak çağırır. Bir test, on bir sorgu için SQL sonucuyla bellek içi sonucun birebir aynı olduğunu doğrular.
+1. **Tek sorgu ağacı, üç kullanım.** Arama tanımı bir kez ayrıştırılır; aynı ağaç (a) toplanan içeriği süzer, (b) kayıtlı içerikte arar, (c) arayüzde eşleşen kelimeleri vurgular. Eşleşme kuralları tek yerde (`matcher.ts`) yaşar. Kayıtlı içerikte aramada veritabanı yalnızca kaba adayları getirir (`lib/query/probe.ts`), kesin kararı aynı eşleştirici verir; Türkçe ek kuralları SQL'de yeniden yazılmaz. Bir test, on bir sorgu için veritabanı yolunun sonucuyla bellek içi sonucun birebir aynı olduğunu doğrular.
 2. **Tek süzgeç, tutarlı sayılar.** Liste, sayım, grafik ve dışa aktarma aynı `MentionFilter` ve aynı `buildWhere` işlevinden geçer. Grafikteki sayı ile listedeki sayının tutmaması yapısal olarak engellenir ve testle korunur.
 3. **Kapsam dürüstlüğü.** Her bağlayıcı ne yapabildiğini ve hangi koşulla kullanılabildiğini kendisi bildirir. Veri toplanmayan dönem "sıfır" sayılmaz: anomali ve dönem karşılaştırması projenin kapsam başlangıcını gözetir.
 
